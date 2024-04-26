@@ -20,6 +20,11 @@ import org.apache.kafka.common.InvalidRecordException;
 import org.apache.kafka.common.errors.ApiException;
 import org.apache.kafka.common.errors.BrokerIdNotRegisteredException;
 import org.apache.kafka.common.errors.BrokerNotAvailableException;
+import org.apache.kafka.common.errors.StreamsInconsistentTopologyException;
+import org.apache.kafka.common.errors.StreamsInvalidTopologyException;
+import org.apache.kafka.common.errors.StreamsMissingInternalTopicsException;
+import org.apache.kafka.common.errors.StreamsMissingSourceTopicsException;
+import org.apache.kafka.common.errors.StreamsShutdownApplicationException;
 import org.apache.kafka.common.errors.ClusterAuthorizationException;
 import org.apache.kafka.common.errors.ConcurrentTransactionsException;
 import org.apache.kafka.common.errors.ControllerMovedException;
@@ -413,7 +418,17 @@ public enum Errors {
     DUPLICATE_VOTER(126, "The voter is already part of the set of voters.", DuplicateVoterException::new),
     VOTER_NOT_FOUND(127, "The voter is not part of the set of voters.", VoterNotFoundException::new),
     INVALID_REGULAR_EXPRESSION(128, "The regular expression is not valid.", InvalidRegularExpression::new),
-    REBOOTSTRAP_REQUIRED(129, "Client metadata is stale, client should rebootstrap to obtain new metadata.", RebootstrapRequiredException::new);
+    REBOOTSTRAP_REQUIRED(129, "Client metadata is stale, client should rebootstrap to obtain new metadata.", RebootstrapRequiredException::new),
+    STREAMS_INVALID_TOPOLOGY(130, "The supplied topology is invalid.",
+        StreamsInvalidTopologyException::new),
+    STREAMS_INCONSISTENT_TOPOLOGY(131, "The topology hash supplied is inconsistent with the topology for this consumer group.",
+        StreamsInconsistentTopologyException::new),
+    STREAMS_MISSING_SOURCE_TOPICS(132, "One or more source topics are missing.",
+        StreamsMissingSourceTopicsException::new),
+    STREAMS_MISSING_INTERNAL_TOPICS(133, "One or more internal topics are missing.",
+        StreamsMissingInternalTopicsException::new),
+    STREAMS_SHUTDOWN_APPLICATION(134, "A client requested the shutdown of the whole application.",
+        StreamsShutdownApplicationException::new);
 
     private static final Logger log = LoggerFactory.getLogger(Errors.class);
 
