@@ -205,6 +205,7 @@ import static org.apache.kafka.coordinator.group.modern.consumer.ConsumerGroupMe
  * 2) The replay methods which apply records to the hard state. Those are used in the request
  *    handling as well as during the initial loading of the records from the partitions.
  */
+@SuppressWarnings("JavaNCSS")
 public class GroupMetadataManager {
     private static final int METADATA_REFRESH_INTERVAL_MS = Integer.MAX_VALUE;
 
