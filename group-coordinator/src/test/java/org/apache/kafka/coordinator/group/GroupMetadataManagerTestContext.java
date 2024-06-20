@@ -98,6 +98,7 @@ import org.apache.kafka.coordinator.group.modern.consumer.ConsumerGroup;
 import org.apache.kafka.coordinator.group.modern.consumer.ConsumerGroupBuilder;
 import org.apache.kafka.coordinator.group.modern.share.ShareGroup;
 import org.apache.kafka.coordinator.group.modern.share.ShareGroupBuilder;
+import org.apache.kafka.coordinator.group.taskassignor.TaskAssignor;
 import org.apache.kafka.image.MetadataImage;
 import org.apache.kafka.server.common.ApiMessageAndVersion;
 import org.apache.kafka.server.common.MetadataVersion;
@@ -459,6 +460,7 @@ public class GroupMetadataManagerTestContext {
         private ShareGroupPartitionAssignor shareGroupAssignor = new MockPartitionAssignor("share");
         private final List<ShareGroupBuilder> shareGroupBuilders = new ArrayList<>();
         private final Map<String, Object> config = new HashMap<>();
+        private List<TaskAssignor> taskAssignors = Collections.singletonList(new MockTaskAssignor("mock"));
 
         public Builder withConfig(String key, Object value) {
             config.put(key, value);
@@ -514,6 +516,7 @@ public class GroupMetadataManagerTestContext {
                     .withGroupCoordinatorMetricsShard(metrics)
                     .withShareGroupAssignor(shareGroupAssignor)
                     .withGroupConfigManager(groupConfigManager)
+                    .withStreamsGroupAssignors(taskAssignors)
                     .build(),
                 groupConfigManager
             );
