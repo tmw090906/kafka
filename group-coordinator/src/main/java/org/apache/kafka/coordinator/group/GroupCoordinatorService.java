@@ -365,7 +365,7 @@ public class GroupCoordinatorService implements GroupCoordinator {
         return runtime.scheduleWriteOperation(
             "streams-group-initialize",
             topicPartitionFor(request.groupId()),
-            Duration.ofMillis(config.offsetCommitTimeoutMs),
+            Duration.ofMillis(config.offsetCommitTimeoutMs()),
             coordinator -> coordinator.streamsInitialize(context, request)
         ).exceptionally(exception -> handleOperationException(
             "streams-group-initialize",
@@ -394,7 +394,7 @@ public class GroupCoordinatorService implements GroupCoordinator {
         return runtime.scheduleWriteOperation(
             "streams-heartbeat",
             topicPartitionFor(request.groupId()),
-            Duration.ofMillis(config.offsetCommitTimeoutMs),
+            Duration.ofMillis(config.offsetCommitTimeoutMs()),
             coordinator -> coordinator.streamsHeartbeat(context, request)
         ).exceptionally(exception -> handleOperationException(
             "streams-heartbeat",
