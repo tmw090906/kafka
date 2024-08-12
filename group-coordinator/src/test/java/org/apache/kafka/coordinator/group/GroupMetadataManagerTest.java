@@ -54,7 +54,7 @@ import org.apache.kafka.common.message.ListGroupsResponseData;
 import org.apache.kafka.common.message.ShareGroupDescribeResponseData;
 import org.apache.kafka.common.message.ShareGroupHeartbeatRequestData;
 import org.apache.kafka.common.message.ShareGroupHeartbeatResponseData;
-import org.apache.kafka.common.message.StreamsHeartbeatRequestData;
+import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData;
 import org.apache.kafka.common.message.SyncGroupRequestData;
 import org.apache.kafka.common.message.SyncGroupRequestData.SyncGroupRequestAssignment;
 import org.apache.kafka.common.message.SyncGroupResponseData;
@@ -268,25 +268,25 @@ public class GroupMetadataManagerTest {
 
         // GroupId must be present in all requests.
         ex = assertThrows(InvalidRequestException.class, () -> context.streamsHeartbeat(
-            new StreamsHeartbeatRequestData()));
+            new StreamsGroupHeartbeatRequestData()));
         assertEquals("GroupId can't be empty.", ex.getMessage());
 
         // GroupId can't be all whitespaces.
         ex = assertThrows(InvalidRequestException.class, () -> context.streamsHeartbeat(
-            new StreamsHeartbeatRequestData()
+            new StreamsGroupHeartbeatRequestData()
                 .setGroupId("   ")));
         assertEquals("GroupId can't be empty.", ex.getMessage());
 
         // RebalanceTimeoutMs must be present in the first request (epoch == 0).
         ex = assertThrows(InvalidRequestException.class, () -> context.streamsHeartbeat(
-            new StreamsHeartbeatRequestData()
+            new StreamsGroupHeartbeatRequestData()
                 .setGroupId("foo")
                 .setMemberEpoch(0)));
         assertEquals("RebalanceTimeoutMs must be provided in first request.", ex.getMessage());
 
         // ActiveTasks must be present and empty in the first request (epoch == 0).
         ex = assertThrows(InvalidRequestException.class, () -> context.streamsHeartbeat(
-            new StreamsHeartbeatRequestData()
+            new StreamsGroupHeartbeatRequestData()
                 .setGroupId("foo")
                 .setMemberEpoch(0)
                 .setRebalanceTimeoutMs(5000)
@@ -296,7 +296,7 @@ public class GroupMetadataManagerTest {
 
         // StandbyTasks must be present and empty in the first request (epoch == 0).
         ex = assertThrows(InvalidRequestException.class, () -> context.streamsHeartbeat(
-            new StreamsHeartbeatRequestData()
+            new StreamsGroupHeartbeatRequestData()
                 .setGroupId("foo")
                 .setMemberEpoch(0)
                 .setRebalanceTimeoutMs(5000)
@@ -306,7 +306,7 @@ public class GroupMetadataManagerTest {
 
         // WarmupTasks must be present and empty in the first request (epoch == 0).
         ex = assertThrows(InvalidRequestException.class, () -> context.streamsHeartbeat(
-            new StreamsHeartbeatRequestData()
+            new StreamsGroupHeartbeatRequestData()
                 .setGroupId("foo")
                 .setMemberEpoch(0)
                 .setRebalanceTimeoutMs(5000)
@@ -317,14 +317,14 @@ public class GroupMetadataManagerTest {
         // MemberId must be non-empty in all requests except for the first one where it
         // could be empty (epoch != 0).
         ex = assertThrows(InvalidRequestException.class, () -> context.streamsHeartbeat(
-            new StreamsHeartbeatRequestData()
+            new StreamsGroupHeartbeatRequestData()
                 .setGroupId("foo")
                 .setMemberEpoch(1)));
         assertEquals("MemberId can't be empty.", ex.getMessage());
 
         // InstanceId must be non-empty if provided in all requests.
         ex = assertThrows(InvalidRequestException.class, () -> context.streamsHeartbeat(
-            new StreamsHeartbeatRequestData()
+            new StreamsGroupHeartbeatRequestData()
                 .setGroupId("foo")
                 .setMemberId(Uuid.randomUuid().toString())
                 .setMemberEpoch(1)
@@ -333,7 +333,7 @@ public class GroupMetadataManagerTest {
 
         // RackId must be non-empty if provided in all requests.
         ex = assertThrows(InvalidRequestException.class, () -> context.streamsHeartbeat(
-            new StreamsHeartbeatRequestData()
+            new StreamsGroupHeartbeatRequestData()
                 .setGroupId("foo")
                 .setMemberId(Uuid.randomUuid().toString())
                 .setMemberEpoch(1)

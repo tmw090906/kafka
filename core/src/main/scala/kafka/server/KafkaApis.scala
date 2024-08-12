@@ -276,8 +276,8 @@ class KafkaApis(val requestChannel: RequestChannel,
         case ApiKeys.WRITE_SHARE_GROUP_STATE => handleWriteShareGroupStateRequest(request)
         case ApiKeys.DELETE_SHARE_GROUP_STATE => handleDeleteShareGroupStateRequest(request)
         case ApiKeys.READ_SHARE_GROUP_STATE_SUMMARY => handleReadShareGroupStateSummaryRequest(request)
-        case ApiKeys.STREAMS_INITIALIZE => handleStreamsInitialize(request).exceptionally(handleError)
-        case ApiKeys.STREAMS_HEARTBEAT => handleStreamsHeartbeat(request).exceptionally(handleError)
+        case ApiKeys.STREAMS_GROUP_INITIALIZE => handleStreamsInitialize(request).exceptionally(handleError)
+        case ApiKeys.STREAMS_GROUP_HEARTBEAT => handleStreamsHeartbeat(request).exceptionally(handleError)
         case _ => throw new IllegalStateException(s"No handler for request api key ${request.header.apiKey}")
       }
     } catch {
@@ -3886,7 +3886,7 @@ class KafkaApis(val requestChannel: RequestChannel,
   }
 
   def handleStreamsInitialize(request: RequestChannel.Request): CompletableFuture[Unit] = {
-    val streamsInitializeRequest = request.body[StreamsInitializeRequest]
+    val streamsInitializeRequest = request.body[StreamsGroupInitializeRequest]
 
     // TODO: Check ACLs on CREATE TOPIC & DESCRIBE_CONFIGS
 
@@ -3906,14 +3906,14 @@ class KafkaApis(val requestChannel: RequestChannel,
         if (exception != null) {
           requestHelper.sendMaybeThrottle(request, streamsInitializeRequest.getErrorResponse(exception))
         } else {
-          requestHelper.sendMaybeThrottle(request, new StreamsInitializeResponse(response))
+          requestHelper.sendMaybeThrottle(request, new StreamsGroupInitializeResponse(response))
         }
       }
     }
   }
 
   def handleStreamsHeartbeat(request: RequestChannel.Request): CompletableFuture[Unit] = {
-    val streamsHeartbeatRequest = request.body[StreamsHeartbeatRequest]
+    val streamsHeartbeatRequest = request.body[StreamsGroupHeartbeatRequest]
 
     if (!config.isNewGroupCoordinatorEnabled) {
       // The API is not supported by the "old" group coordinator (the default). If the
@@ -3931,7 +3931,7 @@ class KafkaApis(val requestChannel: RequestChannel,
         if (exception != null) {
           requestHelper.sendMaybeThrottle(request, streamsHeartbeatRequest.getErrorResponse(exception))
         } else {
-          requestHelper.sendMaybeThrottle(request, new StreamsHeartbeatResponse(response))
+          requestHelper.sendMaybeThrottle(request, new StreamsGroupHeartbeatResponse(response))
         }
       }
     }
