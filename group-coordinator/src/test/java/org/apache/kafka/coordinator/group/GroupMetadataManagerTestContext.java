@@ -37,6 +37,7 @@ import org.apache.kafka.common.message.ListGroupsResponseData;
 import org.apache.kafka.common.message.ShareGroupDescribeResponseData;
 import org.apache.kafka.common.message.ShareGroupHeartbeatRequestData;
 import org.apache.kafka.common.message.ShareGroupHeartbeatResponseData;
+import org.apache.kafka.common.message.StreamsGroupDescribeResponseData;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatResponseData;
 import org.apache.kafka.common.message.StreamsGroupInitializeRequestData;
@@ -90,6 +91,18 @@ import org.apache.kafka.coordinator.group.generated.ShareGroupTargetAssignmentMe
 import org.apache.kafka.coordinator.group.generated.ShareGroupTargetAssignmentMemberValue;
 import org.apache.kafka.coordinator.group.generated.ShareGroupTargetAssignmentMetadataKey;
 import org.apache.kafka.coordinator.group.generated.ShareGroupTargetAssignmentMetadataValue;
+import org.apache.kafka.coordinator.group.generated.StreamsGroupCurrentMemberAssignmentKey;
+import org.apache.kafka.coordinator.group.generated.StreamsGroupCurrentMemberAssignmentValue;
+import org.apache.kafka.coordinator.group.generated.StreamsGroupMemberMetadataKey;
+import org.apache.kafka.coordinator.group.generated.StreamsGroupMemberMetadataValue;
+import org.apache.kafka.coordinator.group.generated.StreamsGroupMetadataKey;
+import org.apache.kafka.coordinator.group.generated.StreamsGroupMetadataValue;
+import org.apache.kafka.coordinator.group.generated.StreamsGroupPartitionMetadataKey;
+import org.apache.kafka.coordinator.group.generated.StreamsGroupPartitionMetadataValue;
+import org.apache.kafka.coordinator.group.generated.StreamsGroupTargetAssignmentMemberKey;
+import org.apache.kafka.coordinator.group.generated.StreamsGroupTargetAssignmentMemberValue;
+import org.apache.kafka.coordinator.group.generated.StreamsGroupTargetAssignmentMetadataKey;
+import org.apache.kafka.coordinator.group.generated.StreamsGroupTargetAssignmentMetadataValue;
 import org.apache.kafka.coordinator.group.generated.StreamsGroupTopologyKey;
 import org.apache.kafka.coordinator.group.generated.StreamsGroupTopologyValue;
 import org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetricsShard;
@@ -98,6 +111,7 @@ import org.apache.kafka.coordinator.group.modern.consumer.ConsumerGroup;
 import org.apache.kafka.coordinator.group.modern.consumer.ConsumerGroupBuilder;
 import org.apache.kafka.coordinator.group.modern.share.ShareGroup;
 import org.apache.kafka.coordinator.group.modern.share.ShareGroupBuilder;
+import org.apache.kafka.coordinator.group.streams.StreamsGroupBuilder;
 import org.apache.kafka.coordinator.group.taskassignor.TaskAssignor;
 import org.apache.kafka.image.MetadataImage;
 import org.apache.kafka.server.common.ApiMessageAndVersion;
@@ -142,6 +156,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
+@SuppressWarnings("CyclomaticComplexity")
 public class GroupMetadataManagerTestContext {
     static final String DEFAULT_CLIENT_ID = "client";
     static final InetAddress DEFAULT_CLIENT_ADDRESS = InetAddress.getLoopbackAddress();
@@ -456,11 +471,14 @@ public class GroupMetadataManagerTestContext {
         private MetadataImage metadataImage;
         private GroupConfigManager groupConfigManager;
         private final List<ConsumerGroupBuilder> consumerGroupBuilders = new ArrayList<>();
+        private final List<StreamsGroupBuilder> streamsGroupBuilders = new ArrayList<>();
+        private int streamsGroupMaxSize = Integer.MAX_VALUE;
+        private int streamsGroupMetadataRefreshIntervalMs = Integer.MAX_VALUE;
         private final GroupCoordinatorMetricsShard metrics = mock(GroupCoordinatorMetricsShard.class);
         private ShareGroupPartitionAssignor shareGroupAssignor = new MockPartitionAssignor("share");
         private final List<ShareGroupBuilder> shareGroupBuilders = new ArrayList<>();
         private final Map<String, Object> config = new HashMap<>();
-        private List<TaskAssignor> taskAssignors = Collections.singletonList(new MockTaskAssignor("mock"));
+        private List<TaskAssignor> streamsGroupAssignors = Collections.singletonList(new MockTaskAssignor("mock"));
 
         public Builder withConfig(String key, Object value) {
             config.put(key, value);
@@ -479,6 +497,26 @@ public class GroupMetadataManagerTestContext {
 
         public Builder withShareGroup(ShareGroupBuilder builder) {
             this.shareGroupBuilders.add(builder);
+            return this;
+        }
+
+        public Builder withTaskAssignors(List<TaskAssignor> assignors) {
+            this.streamsGroupAssignors = assignors;
+            return this;
+        }
+
+        public Builder withStreamsGroup(StreamsGroupBuilder builder) {
+            this.streamsGroupBuilders.add(builder);
+            return this;
+        }
+
+        public Builder withStreamsGroupMaxSize(int streamsGroupMaxSize) {
+            this.streamsGroupMaxSize = streamsGroupMaxSize;
+            return this;
+        }
+
+        public Builder withStreamsGroupMetadataRefreshIntervalMs(int streamsGroupMetadataRefreshIntervalMs) {
+            this.streamsGroupMetadataRefreshIntervalMs = streamsGroupMetadataRefreshIntervalMs;
             return this;
         }
 
@@ -516,13 +554,19 @@ public class GroupMetadataManagerTestContext {
                     .withGroupCoordinatorMetricsShard(metrics)
                     .withShareGroupAssignor(shareGroupAssignor)
                     .withGroupConfigManager(groupConfigManager)
-                    .withStreamsGroupAssignors(taskAssignors)
+                    .withStreamsGroupHeartbeatInterval(5000)
+                    .withStreamsGroupSessionTimeout(45000)
+                    .withStreamsGroupMaxSize(streamsGroupMaxSize)
+                    .withStreamsGroupAssignors(streamsGroupAssignors)
+                    .withStreamsGroupMetadataRefreshIntervalMs(streamsGroupMetadataRefreshIntervalMs)
                     .build(),
                 groupConfigManager
             );
 
             consumerGroupBuilders.forEach(builder -> builder.build(metadataImage.topics()).forEach(context::replay));
             shareGroupBuilders.forEach(builder -> builder.build(metadataImage.topics()).forEach(context::replay));
+
+            streamsGroupBuilders.forEach(builder -> builder.build().forEach(context::replay));
 
             context.commit();
 
@@ -1339,6 +1383,10 @@ public class GroupMetadataManagerTestContext {
         return groupMetadataManager.consumerGroupDescribe(groupIds, lastCommittedOffset);
     }
 
+    public List<StreamsGroupDescribeResponseData.DescribedGroup> sendStreamsGroupDescribe(List<String> groupIds) {
+        return groupMetadataManager.streamsGroupDescribe(groupIds, lastCommittedOffset);
+    }
+
     public List<DescribeGroupsResponseData.DescribedGroup> describeGroups(List<String> groupIds) {
         RequestContext context = new RequestContext(
             new RequestHeader(
@@ -1686,6 +1734,48 @@ public class GroupMetadataManagerTestContext {
                 groupMetadataManager.replay(
                     (ConsumerGroupRegularExpressionKey) key.message(),
                     (ConsumerGroupRegularExpressionValue) messageOrNull(value)
+                );
+                break;
+
+            case StreamsGroupCurrentMemberAssignmentKey.HIGHEST_SUPPORTED_VERSION:
+                groupMetadataManager.replay(
+                    (StreamsGroupCurrentMemberAssignmentKey) key.message(),
+                    (StreamsGroupCurrentMemberAssignmentValue) messageOrNull(value)
+                );
+                break;
+
+            case StreamsGroupMemberMetadataKey.HIGHEST_SUPPORTED_VERSION:
+                groupMetadataManager.replay(
+                    (StreamsGroupMemberMetadataKey) key.message(),
+                    (StreamsGroupMemberMetadataValue) messageOrNull(value)
+                );
+                break;
+
+            case StreamsGroupMetadataKey.HIGHEST_SUPPORTED_VERSION:
+                groupMetadataManager.replay(
+                    (StreamsGroupMetadataKey) key.message(),
+                    (StreamsGroupMetadataValue) messageOrNull(value)
+                );
+                break;
+
+            case StreamsGroupPartitionMetadataKey.HIGHEST_SUPPORTED_VERSION:
+                groupMetadataManager.replay(
+                    (StreamsGroupPartitionMetadataKey) key.message(),
+                    (StreamsGroupPartitionMetadataValue) messageOrNull(value)
+                );
+                break;
+
+            case StreamsGroupTargetAssignmentMemberKey.HIGHEST_SUPPORTED_VERSION:
+                groupMetadataManager.replay(
+                    (StreamsGroupTargetAssignmentMemberKey) key.message(),
+                    (StreamsGroupTargetAssignmentMemberValue) messageOrNull(value)
+                );
+                break;
+
+            case StreamsGroupTargetAssignmentMetadataKey.HIGHEST_SUPPORTED_VERSION:
+                groupMetadataManager.replay(
+                    (StreamsGroupTargetAssignmentMetadataKey) key.message(),
+                    (StreamsGroupTargetAssignmentMetadataValue) messageOrNull(value)
                 );
                 break;
 
