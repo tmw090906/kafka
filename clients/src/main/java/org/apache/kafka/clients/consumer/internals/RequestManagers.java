@@ -70,7 +70,7 @@ public class RequestManagers implements Closeable {
                            Optional<CoordinatorRequestManager> coordinatorRequestManager,
                            Optional<CommitRequestManager> commitRequestManager,
                            Optional<ConsumerHeartbeatRequestManager> heartbeatRequestManager,
-                           Optional<ConsumerMembershipManager> membershipManager) {
+                           Optional<ConsumerMembershipManager> membershipManager,
                            Optional<StreamsGroupHeartbeatRequestManager> streamsHeartbeatRequestManager,
                            Optional<StreamsInitializeRequestManager> streamsInitializeRequestManager) {
         this.log = logContext.logger(RequestManagers.class);
@@ -113,6 +113,8 @@ public class RequestManagers implements Closeable {
         this.shareHeartbeatRequestManager = shareHeartbeatRequestManager;
         this.consumerMembershipManager = Optional.empty();
         this.shareMembershipManager = shareMembershipManager;
+        this.streamsHeartbeatRequestManager = Optional.empty();
+        this.streamsInitializeRequestManager = Optional.empty();
         this.offsetsRequestManager = null;
         this.topicMetadataRequestManager = null;
         this.fetchRequestManager = null;
