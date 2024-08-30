@@ -351,10 +351,10 @@ public class GroupCoordinatorService implements GroupCoordinator {
     }
 
     /**
-     * See {@link GroupCoordinator#streamsInitialize(RequestContext, org.apache.kafka.common.message.StreamsGroupInitializeRequestData)}.
+     * See {@link GroupCoordinator#streamsGroupInitialize(RequestContext, org.apache.kafka.common.message.StreamsGroupInitializeRequestData)}.
      */
     @Override
-    public CompletableFuture<StreamsGroupInitializeResponseData> streamsInitialize(
+    public CompletableFuture<StreamsGroupInitializeResponseData> streamsGroupInitialize(
         RequestContext context,
         StreamsGroupInitializeRequestData request
     ) {
@@ -368,7 +368,7 @@ public class GroupCoordinatorService implements GroupCoordinator {
             "streams-group-initialize",
             topicPartitionFor(request.groupId()),
             Duration.ofMillis(config.offsetCommitTimeoutMs()),
-            coordinator -> coordinator.streamsInitialize(context, request)
+            coordinator -> coordinator.streamsGroupInitialize(context, request)
         ).exceptionally(exception -> handleOperationException(
             "streams-group-initialize",
             request,
@@ -380,10 +380,10 @@ public class GroupCoordinatorService implements GroupCoordinator {
     }
 
     /**
-     * See {@link GroupCoordinator#streamsHeartbeat(RequestContext, org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData)}.
+     * See {@link GroupCoordinator#streamsGroupHeartbeat(RequestContext, org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData)}.
      */
     @Override
-    public CompletableFuture<StreamsGroupHeartbeatResponseData> streamsHeartbeat(
+    public CompletableFuture<StreamsGroupHeartbeatResponseData> streamsGroupHeartbeat(
         RequestContext context,
         StreamsGroupHeartbeatRequestData request
     ) {
@@ -397,7 +397,7 @@ public class GroupCoordinatorService implements GroupCoordinator {
             "streams-heartbeat",
             topicPartitionFor(request.groupId()),
             Duration.ofMillis(config.offsetCommitTimeoutMs()),
-            coordinator -> coordinator.streamsHeartbeat(context, request)
+            coordinator -> coordinator.streamsGroupHeartbeat(context, request)
         ).exceptionally(exception -> handleOperationException(
             "streams-heartbeat",
             request,
