@@ -111,6 +111,7 @@ import org.apache.kafka.coordinator.group.modern.consumer.ConsumerGroup;
 import org.apache.kafka.coordinator.group.modern.consumer.ConsumerGroupBuilder;
 import org.apache.kafka.coordinator.group.modern.share.ShareGroup;
 import org.apache.kafka.coordinator.group.modern.share.ShareGroupBuilder;
+import org.apache.kafka.coordinator.group.streams.StreamsGroup;
 import org.apache.kafka.coordinator.group.streams.StreamsGroupBuilder;
 import org.apache.kafka.coordinator.group.taskassignor.TaskAssignor;
 import org.apache.kafka.image.MetadataImage;
@@ -633,6 +634,14 @@ public class GroupMetadataManagerTestContext {
     ) {
         return groupMetadataManager
             .shareGroup(groupId)
+            .state();
+    }
+
+    public StreamsGroup.StreamsGroupState streamsGroupState(
+        String groupId
+    ) {
+        return groupMetadataManager
+            .streamsGroup(groupId)
             .state();
     }
 
