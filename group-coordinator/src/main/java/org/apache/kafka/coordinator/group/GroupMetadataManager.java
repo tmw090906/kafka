@@ -2259,7 +2259,9 @@ public class GroupMetadataManager {
         updatedMember = maybeReconcile(
             groupId,
             updatedMember,
-            group::currentActiveTaskEpoch,
+            group::currentActiveTaskProcessId,
+            group::currentStandbyTaskProcessIds,
+            group::currentWarmupTaskProcessIds,
             targetAssignmentEpoch,
             targetAssignment,
             ownedActiveTasks,
@@ -3539,8 +3541,12 @@ public class GroupMetadataManager {
      *
      * @param groupId               The group id.
      * @param member                The member to reconcile.
-     * @param currentActiveTaskEpoch The function returning the current epoch of
-     *                              a given partition.
+     * @param currentActiveTaskProcessId The function returning the current process ID of
+     *                              a given active task.
+     * @param currentStandbyTaskProcessIds The function returning the current process IDs of
+     *                              a given standby task.
+     * @param currentWarmupTaskProcessIds The function returning the current process IDs of
+     *                              a given warmup task.
      * @param targetAssignmentEpoch The target assignment epoch.
      * @param targetAssignment      The target assignment.
      * @param ownedActiveTasks      The list of active tasks owned by the member. This
@@ -3559,7 +3565,9 @@ public class GroupMetadataManager {
     private StreamsGroupMember maybeReconcile(
         String groupId,
         StreamsGroupMember member,
-        BiFunction<String, Integer, Integer> currentActiveTaskEpoch,
+        BiFunction<String, Integer, String> currentActiveTaskProcessId,
+        BiFunction<String, Integer, Set<String>> currentStandbyTaskProcessIds,
+        BiFunction<String, Integer, Set<String>> currentWarmupTaskProcessIds,
         int targetAssignmentEpoch,
         org.apache.kafka.coordinator.group.streams.Assignment targetAssignment,
         List<StreamsGroupHeartbeatRequestData.TaskIds> ownedActiveTasks,
@@ -3573,7 +3581,9 @@ public class GroupMetadataManager {
 
         StreamsGroupMember updatedMember = new org.apache.kafka.coordinator.group.streams.CurrentAssignmentBuilder(member)
             .withTargetAssignment(targetAssignmentEpoch, targetAssignment)
-            .withCurrentActiveTaskEpoch(currentActiveTaskEpoch)
+            .withCurrentActiveTaskProcessId(currentActiveTaskProcessId)
+            .withCurrentStandbyTaskProcessIds(currentStandbyTaskProcessIds)
+            .withCurrentWarmupTaskProcessIds(currentWarmupTaskProcessIds)
             .withOwnedActiveTasks(ownedActiveTasks)
             .withOwnedStandbyTasks(ownedStandbyTasks)
             .withOwnedWarmupTasks(ownedWarmupTasks)
@@ -5569,6 +5579,8 @@ public class GroupMetadataManager {
                 .setAssignedStandbyTasks(Collections.emptyMap())
                 .setAssignedWarmupTasks(Collections.emptyMap())
                 .setActiveTasksPendingRevocation(Collections.emptyMap())
+                .setStandbyTasksPendingRevocation(Collections.emptyMap())
+                .setWarmupTasksPendingRevocation(Collections.emptyMap())
                 .build();
             streamsGroup.updateMember(newMember);
         }
