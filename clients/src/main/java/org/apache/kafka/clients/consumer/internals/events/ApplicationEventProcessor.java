@@ -208,6 +208,10 @@ public class ApplicationEventProcessor implements EventProcessor<ApplicationEven
                 hrm.membershipManager().onConsumerPoll();
                 hrm.resetPollTimer(event.pollTimeMs());
             });
+            requestManagers.streamsGroupHeartbeatRequestManager.ifPresent(hrm -> {
+                hrm.membershipManager().onConsumerPoll();
+                hrm.resetPollTimer(event.pollTimeMs());
+            });
         } else {
             requestManagers.shareHeartbeatRequestManager.ifPresent(hrm -> {
                 hrm.membershipManager().onConsumerPoll();
