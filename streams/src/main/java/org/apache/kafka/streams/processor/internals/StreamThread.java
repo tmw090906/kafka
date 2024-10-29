@@ -1447,12 +1447,12 @@ public class StreamThread extends Thread implements ProcessingThread {
         return taskIdStream
             .collect(Collectors.toMap(
                 this::toTaskId,
-                task -> toTopicPartitions(task, streamsAssignmentInterface.subtopologyMap().get(task.subtopologyId))
+                task -> toTopicPartitions(task, streamsAssignmentInterface.subtopologyMap().get(task.subtopologyId()))
             ));
     }
 
     private TaskId toTaskId(final StreamsAssignmentInterface.TaskId task) {
-        return new TaskId(Integer.parseInt(task.subtopologyId), task.partitionId);
+        return new TaskId(Integer.parseInt(task.subtopologyId()), task.partitionId());
     }
 
     private Set<TopicPartition> toTopicPartitions(final StreamsAssignmentInterface.TaskId task,
@@ -1462,7 +1462,7 @@ public class StreamThread extends Thread implements ProcessingThread {
                 subTopology.sourceTopics.stream(),
                 subTopology.repartitionSourceTopics.keySet().stream()
             )
-            .map(t -> new TopicPartition(t, task.partitionId))
+            .map(t -> new TopicPartition(t, task.partitionId()))
             .collect(Collectors.toSet());
     }
 
