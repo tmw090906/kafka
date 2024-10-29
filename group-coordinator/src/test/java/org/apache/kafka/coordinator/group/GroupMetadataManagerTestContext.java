@@ -41,7 +41,6 @@ import org.apache.kafka.common.message.StreamsGroupDescribeResponseData;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatResponseData;
 import org.apache.kafka.common.message.StreamsGroupInitializeRequestData;
-import org.apache.kafka.common.message.StreamsGroupInitializeResponseData;
 import org.apache.kafka.common.message.SyncGroupRequestData;
 import org.apache.kafka.common.message.SyncGroupResponseData;
 import org.apache.kafka.common.network.ClientInformation;
@@ -113,6 +112,7 @@ import org.apache.kafka.coordinator.group.modern.share.ShareGroup;
 import org.apache.kafka.coordinator.group.modern.share.ShareGroupBuilder;
 import org.apache.kafka.coordinator.group.streams.StreamsGroup;
 import org.apache.kafka.coordinator.group.streams.StreamsGroupBuilder;
+import org.apache.kafka.coordinator.group.streams.StreamsGroupInitializeResult;
 import org.apache.kafka.coordinator.group.taskassignor.TaskAssignor;
 import org.apache.kafka.image.MetadataImage;
 import org.apache.kafka.server.common.ApiMessageAndVersion;
@@ -721,7 +721,7 @@ public class GroupMetadataManagerTestContext {
     }
 
 
-    public CoordinatorResult<StreamsGroupInitializeResponseData, CoordinatorRecord> streamsGroupInitialize(
+    public CoordinatorResult<StreamsGroupInitializeResult, CoordinatorRecord> streamsGroupInitialize(
         StreamsGroupInitializeRequestData request
     ) {
         RequestContext context = new RequestContext(
@@ -740,7 +740,7 @@ public class GroupMetadataManagerTestContext {
             false
         );
 
-        CoordinatorResult<StreamsGroupInitializeResponseData, CoordinatorRecord> result = groupMetadataManager.streamsGroupInitialize(
+        CoordinatorResult<StreamsGroupInitializeResult, CoordinatorRecord> result = groupMetadataManager.streamsGroupInitialize(
             context,
             request
         );
