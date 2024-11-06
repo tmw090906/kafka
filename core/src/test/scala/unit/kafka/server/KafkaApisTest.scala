@@ -78,7 +78,7 @@ import org.apache.kafka.coordinator.group.GroupConfig.{CONSUMER_HEARTBEAT_INTERV
 import org.apache.kafka.coordinator.group.modern.share.ShareGroupConfig
 import org.apache.kafka.coordinator.group.{GroupConfig, GroupCoordinator, GroupCoordinatorConfig}
 import org.apache.kafka.coordinator.group.{GroupCoordinator, GroupCoordinatorConfig}
-import org.apache.kafka.coordinator.group.streams.StreamsGroupInitializeResult
+import org.apache.kafka.coordinator.group.streams.StreamsGroupHeartbeatResult
 import org.apache.kafka.coordinator.share.{ShareCoordinator, ShareCoordinatorConfigTest}
 import org.apache.kafka.coordinator.transaction.TransactionLogConfig
 import org.apache.kafka.metadata.LeaderAndIsr
@@ -11245,79 +11245,6 @@ class KafkaApisTest extends Logging {
   }
 
   @Test
-  def testStreamsGroupInitializeRequest(): Unit = {
-    metadataCache = mock(classOf[KRaftMetadataCache])
-
-    val streamsGroupInitializeRequest = new StreamsGroupInitializeRequestData().setGroupId("group")
-
-    val requestChannelRequest = buildRequest(new StreamsGroupInitializeRequest.Builder(streamsGroupInitializeRequest, true).build())
-
-    val future = new CompletableFuture[StreamsGroupInitializeResult]()
-    when(groupCoordinator.streamsGroupInitialize(
-      requestChannelRequest.context,
-      streamsGroupInitializeRequest
-    )).thenReturn(future)
-    kafkaApis = createKafkaApis(
-      overrideProperties = Map(GroupCoordinatorConfig.GROUP_COORDINATOR_REBALANCE_PROTOCOLS_CONFIG -> "classic,streams"),
-      raftSupport = true
-    )
-    kafkaApis.handle(requestChannelRequest, RequestLocal.noCaching)
-
-    val streamsGroupInitializeResponse = new StreamsGroupInitializeResult(new StreamsGroupInitializeResponseData())
-
-    future.complete(streamsGroupInitializeResponse)
-    val response = verifyNoThrottling[StreamsGroupInitializeResponse](requestChannelRequest)
-    assertEquals(streamsGroupInitializeResponse, response.data)
-  }
-
-  @Test
-  def testStreamsGroupInitializeRequestFutureFailed(): Unit = {
-    metadataCache = mock(classOf[KRaftMetadataCache])
-
-    val streamsGroupInitializeRequest = new StreamsGroupInitializeRequestData().setGroupId("group")
-
-    val requestChannelRequest = buildRequest(new StreamsGroupInitializeRequest.Builder(streamsGroupInitializeRequest, true).build())
-
-    val future = new CompletableFuture[StreamsGroupInitializeResult]()
-    when(groupCoordinator.streamsGroupInitialize(
-      requestChannelRequest.context,
-      streamsGroupInitializeRequest
-    )).thenReturn(future)
-    kafkaApis = createKafkaApis(
-      overrideProperties = Map(GroupCoordinatorConfig.GROUP_COORDINATOR_REBALANCE_PROTOCOLS_CONFIG -> "classic,streams"),
-      raftSupport = true
-    )
-    kafkaApis.handle(requestChannelRequest, RequestLocal.noCaching)
-
-    future.completeExceptionally(Errors.FENCED_MEMBER_EPOCH.exception)
-    val response = verifyNoThrottling[StreamsGroupInitializeResponse](requestChannelRequest)
-    assertEquals(Errors.FENCED_MEMBER_EPOCH.code, response.data.errorCode)
-  }
-
-  @Test
-  def testStreamsGroupInitializeRequestAuthorizationFailed(): Unit = {
-    metadataCache = mock(classOf[KRaftMetadataCache])
-
-    val streamsGroupInitializeRequest = new StreamsGroupInitializeRequestData().setGroupId("group")
-
-    val requestChannelRequest = buildRequest(new StreamsGroupInitializeRequest.Builder(streamsGroupInitializeRequest, true).build())
-
-    val authorizer: Authorizer = mock(classOf[Authorizer])
-    when(authorizer.authorize(any[RequestContext], any[util.List[Action]]))
-      .thenReturn(Seq(AuthorizationResult.DENIED).asJava)
-    kafkaApis = createKafkaApis(
-      authorizer = Some(authorizer),
-      overrideProperties = Map(GroupCoordinatorConfig.GROUP_COORDINATOR_REBALANCE_PROTOCOLS_CONFIG -> "classic,streams"),
-      raftSupport = true
-    )
-    kafkaApis.handle(requestChannelRequest, RequestLocal.noCaching)
-
-    val response = verifyNoThrottling[StreamsGroupInitializeResponse](requestChannelRequest)
-    assertEquals(Errors.GROUP_AUTHORIZATION_FAILED.code, response.data.errorCode)
-  }
-
-
-  @Test
   def testStreamsGroupHeartbeatRequest(): Unit = {
     metadataCache = mock(classOf[KRaftMetadataCache])
 
@@ -11325,7 +11252,7 @@ class KafkaApisTest extends Logging {
 
     val requestChannelRequest = buildRequest(new StreamsGroupHeartbeatRequest.Builder(streamsGroupHeartbeatRequest, true).build())
 
-    val future = new CompletableFuture[StreamsGroupHeartbeatResponseData]()
+    val future = new CompletableFuture[StreamsGroupHeartbeatResult]()
     when(groupCoordinator.streamsGroupHeartbeat(
       requestChannelRequest.context,
       streamsGroupHeartbeatRequest
@@ -11339,7 +11266,7 @@ class KafkaApisTest extends Logging {
     val streamsGroupHeartbeatResponse = new StreamsGroupHeartbeatResponseData()
       .setMemberId("member")
 
-    future.complete(streamsGroupHeartbeatResponse)
+    future.complete(new StreamsGroupHeartbeatResult(streamsGroupHeartbeatResponse))
     val response = verifyNoThrottling[StreamsGroupHeartbeatResponse](requestChannelRequest)
     assertEquals(streamsGroupHeartbeatResponse, response.data)
   }
@@ -11352,7 +11279,7 @@ class KafkaApisTest extends Logging {
 
     val requestChannelRequest = buildRequest(new StreamsGroupHeartbeatRequest.Builder(streamsGroupHeartbeatRequest, true).build())
 
-    val future = new CompletableFuture[StreamsGroupHeartbeatResponseData]()
+    val future = new CompletableFuture[StreamsGroupHeartbeatResult]()
     when(groupCoordinator.streamsGroupHeartbeat(
       requestChannelRequest.context,
       streamsGroupHeartbeatRequest
@@ -11388,6 +11315,187 @@ class KafkaApisTest extends Logging {
 
     val response = verifyNoThrottling[StreamsGroupHeartbeatResponse](requestChannelRequest)
     assertEquals(Errors.GROUP_AUTHORIZATION_FAILED.code, response.data.errorCode)
+  }
+
+  @Test
+  def testStreamsGroupHeartbeatRequestProtocolDisabled(): Unit = {
+    metadataCache = mock(classOf[KRaftMetadataCache])
+
+    val streamsGroupHeartbeatRequest = new StreamsGroupHeartbeatRequestData().setGroupId("group")
+
+    val requestChannelRequest = buildRequest(new StreamsGroupHeartbeatRequest.Builder(streamsGroupHeartbeatRequest, true).build())
+
+    kafkaApis = createKafkaApis(
+      overrideProperties = Map(GroupCoordinatorConfig.GROUP_COORDINATOR_REBALANCE_PROTOCOLS_CONFIG -> "classic,consumer"),
+      raftSupport = true
+    )
+    kafkaApis.handle(requestChannelRequest, RequestLocal.noCaching)
+
+    val response = verifyNoThrottling[StreamsGroupHeartbeatResponse](requestChannelRequest)
+    assertEquals(Errors.UNSUPPORTED_VERSION.code, response.data.errorCode)
+  }
+
+  @Test
+  def testStreamsGroupHeartbeatRequestInvalidTopicNames(): Unit = {
+    metadataCache = mock(classOf[KRaftMetadataCache])
+
+    val streamsGroupHeartbeatRequest = new StreamsGroupHeartbeatRequestData().setGroupId("group").setTopology(
+      Collections.singletonList(new StreamsGroupHeartbeatRequestData.Subtopology().setSubtopologyId("subtopology")
+        .setSourceTopics(Collections.singletonList("a "))
+        .setRepartitionSinkTopics(Collections.singletonList("b?"))
+        .setRepartitionSourceTopics(Collections.singletonList(new StreamsGroupHeartbeatRequestData.TopicInfo().setName("c!")))
+        .setStateChangelogTopics(Collections.singletonList(new StreamsGroupHeartbeatRequestData.TopicInfo().setName("d/")))
+      )
+    )
+
+    val requestChannelRequest = buildRequest(new StreamsGroupHeartbeatRequest.Builder(streamsGroupHeartbeatRequest, true).build())
+
+    kafkaApis = createKafkaApis(
+      overrideProperties = Map(GroupCoordinatorConfig.GROUP_COORDINATOR_REBALANCE_PROTOCOLS_CONFIG -> "classic,streams"),
+      raftSupport = true
+    )
+    kafkaApis.handle(requestChannelRequest, RequestLocal.noCaching)
+
+    val response = verifyNoThrottling[StreamsGroupHeartbeatResponse](requestChannelRequest)
+    assertEquals(Errors.STREAMS_INVALID_TOPOLOGY.code, response.data.errorCode)
+    assertEquals("Topic names a ,b?,c!,d/ are not valid topic names.", response.data.errorMessage())
+  }
+
+  @Test
+  def testStreamsGroupHeartbeatRequestInternalTopicNames(): Unit = {
+    metadataCache = mock(classOf[KRaftMetadataCache])
+
+    val streamsGroupHeartbeatRequest = new StreamsGroupHeartbeatRequestData().setGroupId("group").setTopology(
+      Collections.singletonList(new StreamsGroupHeartbeatRequestData.Subtopology().setSubtopologyId("subtopology")
+        .setSourceTopics(Collections.singletonList("__consumer_offsets"))
+        .setRepartitionSinkTopics(Collections.singletonList("__transaction_state"))
+        .setRepartitionSourceTopics(Collections.singletonList(new StreamsGroupHeartbeatRequestData.TopicInfo().setName("__share_group_state")))
+      )
+    )
+
+    val requestChannelRequest = buildRequest(new StreamsGroupHeartbeatRequest.Builder(streamsGroupHeartbeatRequest, true).build())
+
+    kafkaApis = createKafkaApis(
+      overrideProperties = Map(GroupCoordinatorConfig.GROUP_COORDINATOR_REBALANCE_PROTOCOLS_CONFIG -> "classic,streams"),
+      raftSupport = true
+    )
+    kafkaApis.handle(requestChannelRequest, RequestLocal.noCaching)
+
+    val response = verifyNoThrottling[StreamsGroupHeartbeatResponse](requestChannelRequest)
+    assertEquals(Errors.STREAMS_INVALID_TOPOLOGY.code, response.data.errorCode)
+    assertEquals("Use of Kafka internal topics __consumer_offsets,__transaction_state,__share_group_state in a Kafka Streams topology is prohibited.", response.data.errorMessage())
+  }
+
+  @Test
+  def testStreamsGroupHeartbeatRequestMissingDescribeConfigsPermission(): Unit = {
+    metadataCache = mock(classOf[KRaftMetadataCache])
+
+    val streamsGroupHeartbeatRequest = new StreamsGroupHeartbeatRequestData().setGroupId("group").setTopology(
+      Collections.singletonList(new StreamsGroupHeartbeatRequestData.Subtopology().setSubtopologyId("subtopology")
+        .setSourceTopics(Collections.singletonList("a"))
+        .setRepartitionSinkTopics(Collections.singletonList("b"))
+        .setRepartitionSourceTopics(Collections.singletonList(new StreamsGroupHeartbeatRequestData.TopicInfo().setName("c")))
+        .setStateChangelogTopics(Collections.singletonList(new StreamsGroupHeartbeatRequestData.TopicInfo().setName("d")))
+      )
+    )
+
+    val requestChannelRequest = buildRequest(new StreamsGroupHeartbeatRequest.Builder(streamsGroupHeartbeatRequest, true).build())
+
+    val authorizer: Authorizer = mock(classOf[Authorizer])
+    when(authorizer.authorize(any[RequestContext], isNotNull[util.List[Action]])).thenAnswer(invocation => {
+      val actions = invocation.getArgument(1).asInstanceOf[util.List[Action]]
+      actions.asScala.map { action =>
+        if (!action.resourcePattern.name.equals("a") && action.operation() == AclOperation.DESCRIBE_CONFIGS) {
+          AuthorizationResult.DENIED
+        } else {
+          AuthorizationResult.ALLOWED
+        }
+      }.asJava
+    })
+    kafkaApis = createKafkaApis(
+      authorizer = Some(authorizer),
+      overrideProperties = Map(GroupCoordinatorConfig.GROUP_COORDINATOR_REBALANCE_PROTOCOLS_CONFIG -> "classic,streams"),
+      raftSupport = true
+    )
+    kafkaApis.handle(requestChannelRequest, RequestLocal.noCaching)
+
+    val response = verifyNoThrottling[StreamsGroupHeartbeatResponse](requestChannelRequest)
+    assertEquals(Errors.TOPIC_AUTHORIZATION_FAILED.code, response.data.errorCode)
+    assertEquals("Unauthorized to DESCRIBE_CONFIGS on topics b,c,d are unauthorized.", response.data.errorMessage())
+  }
+
+  @Test
+  def testStreamsGroupHeartbeatRequestMissingTopics(): Unit = {
+    metadataCache = mock(classOf[KRaftMetadataCache])
+
+    val streamsGroupHeartbeatRequest = new StreamsGroupHeartbeatRequestData().setGroupId("group");
+
+    val requestChannelRequest = buildRequest(new StreamsGroupHeartbeatRequest.Builder(streamsGroupHeartbeatRequest, true).build())
+
+    val future = new CompletableFuture[StreamsGroupHeartbeatResult]()
+    when(groupCoordinator.streamsGroupHeartbeat(
+      requestChannelRequest.context,
+      streamsGroupHeartbeatRequest
+    )).thenReturn(future)
+
+    kafkaApis = createKafkaApis(
+      overrideProperties = Map(GroupCoordinatorConfig.GROUP_COORDINATOR_REBALANCE_PROTOCOLS_CONFIG -> "classic,streams"),
+      raftSupport = true
+    )
+    kafkaApis.handle(requestChannelRequest, RequestLocal.noCaching)
+
+    val missingTopics = Map("test" -> new CreatableTopic())
+    val streamsGroupHeartbeatResponse = new StreamsGroupHeartbeatResponseData()
+      .setMemberId("member")
+
+    future.complete(new StreamsGroupHeartbeatResult(streamsGroupHeartbeatResponse, missingTopics.asJava))
+    val response = verifyNoThrottling[StreamsGroupHeartbeatResponse](requestChannelRequest)
+    assertEquals(streamsGroupHeartbeatResponse, response.data)
+    verify(autoTopicCreationManager).createStreamsInternalTopics(missingTopics, requestChannelRequest.context)
+  }
+
+  @Test
+  def testStreamsGroupHeartbeatRequestMissingTopicsMissingCreateACL(): Unit = {
+    metadataCache = mock(classOf[KRaftMetadataCache])
+
+    val streamsGroupHeartbeatRequest = new StreamsGroupHeartbeatRequestData().setGroupId("group");
+
+    val requestChannelRequest = buildRequest(new StreamsGroupHeartbeatRequest.Builder(streamsGroupHeartbeatRequest, true).build())
+
+    val future = new CompletableFuture[StreamsGroupHeartbeatResult]()
+    when(groupCoordinator.streamsGroupHeartbeat(
+      requestChannelRequest.context,
+      streamsGroupHeartbeatRequest
+    )).thenReturn(future)
+
+    val authorizer: Authorizer = mock(classOf[Authorizer])
+    when(authorizer.authorize(any[RequestContext], isNotNull[util.List[Action]])).thenAnswer(invocation => {
+      val actions = invocation.getArgument(1).asInstanceOf[util.List[Action]]
+      actions.asScala.map { action =>
+        if (action.resourcePattern.name.equals("test") && action.operation() == AclOperation.CREATE && action.resourcePattern().resourceType() == ResourceType.TOPIC) {
+          AuthorizationResult.DENIED
+        } else if (action.operation() == AclOperation.CREATE && action.resourcePattern().resourceType() == ResourceType.CLUSTER) {
+          AuthorizationResult.DENIED
+        } else {
+          AuthorizationResult.ALLOWED
+        }
+      }.asJava
+    })
+    kafkaApis = createKafkaApis(
+      authorizer = Some(authorizer),
+      overrideProperties = Map(GroupCoordinatorConfig.GROUP_COORDINATOR_REBALANCE_PROTOCOLS_CONFIG -> "classic,streams"),
+      raftSupport = true
+    )
+    kafkaApis.handle(requestChannelRequest, RequestLocal.noCaching)
+
+    val missingTopics = Map("test" -> new CreatableTopic())
+    val streamsGroupHeartbeatResponse = new StreamsGroupHeartbeatResponseData()
+      .setMemberId("member")
+
+    future.complete(new StreamsGroupHeartbeatResult(streamsGroupHeartbeatResponse, missingTopics.asJava))
+    val response = verifyNoThrottling[StreamsGroupHeartbeatResponse](requestChannelRequest)
+    assertEquals(Errors.TOPIC_AUTHORIZATION_FAILED.code, response.data.errorCode)
+    assertEquals("Unauthorized to CREATE on topics test.", response.data.errorMessage())
   }
 
   @ParameterizedTest

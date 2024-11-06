@@ -97,7 +97,6 @@ public class ApplicationEventProcessorTest {
                 withGroupId ? Optional.of(commitRequestManager) : Optional.empty(),
                 withGroupId ? Optional.of(heartbeatRequestManager) : Optional.empty(),
                 withGroupId ? Optional.of(membershipManager) : Optional.empty(),
-                Optional.empty(),
                 Optional.empty()
         );
 
