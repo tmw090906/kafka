@@ -2332,7 +2332,6 @@ org.apache.kafka.clients.producer.KafkaProducerTest:
 - testUnusedConfigs
 org.apache.kafka.clients.producer.MockProducerTest:
 - shouldAbortEmptyTransaction
-- shouldAddOffsetsWhenSendOffsetsToTransactionByGroupId
 - shouldAddOffsetsWhenSendOffsetsToTransactionByGroupMetadata
 - shouldBeFlushedIfNoBufferedRecords
 - shouldBeFlushedWithAutoCompleteIfBufferedRecords
@@ -2342,7 +2341,6 @@ org.apache.kafka.clients.producer.MockProducerTest:
 - shouldDropConsumerGroupOffsetsOnAbortIfTransactionsAreEnabled
 - shouldDropMessagesOnAbortIfTransactionsAreEnabled
 - shouldFlushOnCommitForNonAutoCompleteIfTransactionsAreEnabled
-- shouldIgnoreEmptyOffsetsWhenSendOffsetsToTransactionByGroupId
 - shouldIgnoreEmptyOffsetsWhenSendOffsetsToTransactionByGroupMetadata
 - shouldInitTransactions
 - shouldNotBeFlushedAfterFlush
@@ -2375,7 +2373,6 @@ org.apache.kafka.clients.producer.MockProducerTest:
 - shouldThrowOnFlushProducerIfProducerIsClosed
 - shouldThrowOnInitTransactionIfProducerAlreadyInitializedForTransactions
 - shouldThrowOnInitTransactionIfProducerIsClosed
-- shouldThrowOnNullConsumerGroupIdWhenSendOffsetsToTransaction
 - shouldThrowOnNullConsumerGroupMetadataWhenSendOffsetsToTransaction
 - shouldThrowOnSendIfProducerGotFenced
 - shouldThrowOnSendIfProducerIsClosed
