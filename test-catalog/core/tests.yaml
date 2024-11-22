@@ -697,7 +697,6 @@ kafka.api.SaslPlainPlaintextConsumerTest:
 - testClusterResourceListener
 - testCoordinatorFailover
 - testSimpleConsumption
-- testZkAclsDisabled
 kafka.api.SaslPlaintextConsumerTest:
 - testClusterResourceListener
 - testCoordinatorFailover

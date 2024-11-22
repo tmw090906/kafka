@@ -787,6 +787,7 @@ org.apache.kafka.clients.consumer.KafkaConsumerTest:
 - testShouldAttemptToRejoinGroupAfterSyncGroupFailed
 - testShouldNotCallMetricReporterMetricRemovalWithExistingConsumerMetric
 - testShouldOnlyCallMetricReporterMetricChangeOnceWithExistingConsumerMetric
+- testSubscribeToRe2jPatternNotSupportedForClassicConsumer
 - testSubscribingCustomMetricsDoesntAffectConsumerMetrics
 - testSubscribingCustomMetricsWithSameNameDoesntAffectConsumerMetrics
 - testSubscription
@@ -1072,6 +1073,7 @@ org.apache.kafka.clients.consumer.internals.AsyncKafkaConsumerTest:
 - testSubscribePatternGeneratesEvent
 - testSubscribeToEmptyListActsAsUnsubscribe
 - testSubscribeToNullTopicCollection
+- testSubscribeToRe2JPatternValidation
 - testSubscriptionOnEmptyTopic
 - testSubscriptionOnNullTopic
 - testSuccessfulStartupShutdown
