@@ -3,6 +3,8 @@ org.apache.kafka.controller.AclControlManagerTest:
 - testCreateAclDeleteAcl
 - testDeleteDedupe
 - testLoadSnapshot
+- testValidateAclWithBadPrincipal
+- testValidateAclWithEmptyPrincipal
 - testValidateFilter
 - testValidateNewAcl
 org.apache.kafka.controller.ActivationRecordsGeneratorTest:
