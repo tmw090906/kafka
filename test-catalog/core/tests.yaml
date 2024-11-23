@@ -176,15 +176,12 @@ kafka.admin.DeleteTopicTest:
 - testResumeDeleteTopicWithRecoveredFollower
 kafka.admin.ListOffsetsIntegrationTest:
 - testListMaxTimestampWithEmptyLog
-- testListVersion0
 - testThreeCompressedRecordsInOneBatch
 - testThreeCompressedRecordsInSeparateBatch
 - testThreeNonCompressedRecordsInOneBatch
 - testThreeNonCompressedRecordsInSeparateBatch
 - testThreeRecordsInOneBatchHavingDifferentCompressionTypeWithServer
-- testThreeRecordsInOneBatchWithMessageConversion
 - testThreeRecordsInSeparateBatchHavingDifferentCompressionTypeWithServer
-- testThreeRecordsInSeparateBatchWithMessageConversion
 kafka.admin.RemoteTopicCrudTest:
 - testClusterWideDisablementOfTieredStorageWithEnabledTieredTopic
 - testClusterWithoutTieredStorageStartsSuccessfullyIfTopicWithTieringDisabled
@@ -2021,7 +2018,6 @@ kafka.metrics.MetricsTest:
 - testUpdateJMXFilter
 - testWindowsStyleTagNames
 - testYammerMetricsCountMetric
-- testZkControllerMetrics
 kafka.network.ConnectionQuotasTest:
 - testBrokerConnectionRateLimitWhenActualRateAboveLimit
 - testBrokerConnectionRateLimitWhenActualRateBelowLimit
@@ -2579,10 +2575,8 @@ kafka.server.ControllerRegistrationManagerTest:
 kafka.server.CreateTopicsRequestTest:
 - testCreateClusterMetadataTopic
 - testCreateTopicsRequestVersions
-- testCreateTopicsWithVeryShortTimeouts
 - testErrorCreateTopicsRequests
 - testInvalidCreateTopicsRequests
-- testNotController
 - testValidCreateTopicsRequests
 kafka.server.CreateTopicsRequestWithPolicyTest:
 - testErrorCreateTopicsRequests
@@ -2620,7 +2614,6 @@ kafka.server.DeleteRecordsRequestTest:
 kafka.server.DeleteTopicsRequestTest:
 - testDeleteTopicsVersions
 - testErrorDeleteTopicRequests
-- testNotController
 - testTopicDeletionClusterHasOfflinePartitions
 - testValidDeleteTopicRequests
 kafka.server.DeleteTopicsRequestWithDeletionDisabledTest:
@@ -2697,7 +2690,6 @@ kafka.server.DynamicConfigChangeTest:
 - testBrokerIdConfigChangeAndDelete
 - testClientIdQuotaConfigChange
 - testConfigChange
-- testConfigChangeOnNonExistingTopic
 - testConfigChangeOnNonExistingTopicWithAdminClient
 - testDefaultAndBrokerIdConfigChange
 - testDefaultBrokerIdConfigChangeAndDelete
@@ -2711,9 +2703,6 @@ kafka.server.DynamicConfigChangeTest:
 - testIncrementalAlterDefaultTopicConfig
 - testIpQuotaConfigChange
 - testIpQuotaInitialization
-- testMessageFormatVersionChange
-- testProcessNotification
-- testQuotaInitialization
 - testUserClientIdQuotaChange
 - testUserQuotaConfigChange
 kafka.server.DynamicConfigChangeUnitTest:
@@ -3355,12 +3344,10 @@ kafka.server.MetadataCacheTest:
 kafka.server.MetadataRequestTest:
 - testAliveBrokersWithNoTopics
 - testAllTopicsRequest
-- testAutoCreateOfCollidingTopics
 - testAutoCreateTopicWithInvalidReplicationFactor
 - testAutoTopicCreation
 - testClusterIdIsValid
 - testClusterIdWithRequestVersion1
-- testControllerId
 - testIsInternal
 - testIsrAfterBrokerShutDownAndJoinsBack
 - testNoTopicsRequest
@@ -3616,9 +3603,7 @@ kafka.server.ServerMetricsTest:
 kafka.server.ServerShutdownTest:
 - testCleanShutdown
 - testCleanShutdownAfterFailedStartup
-- testCleanShutdownWithZkUnavailable
 - testConsecutiveShutdown
-- testControllerShutdownDuringSend
 - testNoCleanShutdownAfterFailedStartupDueToCorruptLogs
 - testShutdownWithKRaftControllerUnavailable
 kafka.server.ServerTest:
