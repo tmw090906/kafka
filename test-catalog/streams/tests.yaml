@@ -152,11 +152,16 @@ org.apache.kafka.streams.StreamsBuilderTest:
 - shouldUseSpecifiedStoreSuppliersOuterJoinStoreEvenIfThisSupplierIsSupplied
 - shouldUseThisStoreSupplierEvenIfDslStoreSuppliersConfiguredInTopologyConfig
 - shouldUseTopologyOverrideStoreTypeOverConfiguredDslStoreSupplier
+- shouldWrapProcessorsForAggregationOperators
+- shouldWrapProcessorsForProcess
+- shouldWrapProcessorsForStatelessOperators
 org.apache.kafka.streams.StreamsConfigTest:
 - consumerConfigMustContainStreamPartitionAssignorConfig
 - defaultSerdeShouldBeConfigured
 - shouldAcceptAtLeastOnce
 - shouldAcceptBuiltInMetricsLatestVersion
+- shouldAllowConfiguringProcessorWrapperWithClass
+- shouldAllowConfiguringProcessorWrapperWithClassName
 - shouldAllowMultipleOptimizations
 - shouldAllowSettingConsumerIsolationLevelIfEosDisabled
 - shouldAllowSettingProducerEnableIdempotenceIfEosDisabled
@@ -199,6 +204,7 @@ org.apache.kafka.streams.StreamsConfigTest:
 - shouldResetToDefaultIfRestoreConsumerAutoCommitIsOverridden
 - shouldResetToDefaultIfRestoreConsumerGroupProtocolIsOverridden
 - shouldReturnDefaultClientSupplier
+- shouldReturnDefaultProcessorWrapperClass
 - shouldReturnDefaultRackAwareAssignmentConfig
 - shouldReturnDefaultRackAwareAssignmentNonOverlapCost
 - shouldReturnDefaultRackAwareAssignmentTrafficCost
@@ -361,6 +367,7 @@ org.apache.kafka.streams.TopologyTest:
 - shouldNotAllowZeroStoreNameWhenConnectingProcessorAndStateStores
 - shouldNotAllowZeroTopicsWhenAddingSource
 - shouldThrowOnUnassignedStateStoreAccess
+- shouldWrapProcessors
 - singleSourcePatternShouldHaveSingleSubtopology
 - singleSourceShouldHaveSingleSubtopology
 - singleSourceWithListOfTopicsShouldHaveSingleSubtopology
@@ -1924,7 +1931,10 @@ org.apache.kafka.streams.processor.internals.InternalTopologyBuilderTest:
 - shouldThrowIfBothTopicAndPatternAreNotNull
 - shouldThrowIfNameIsNull
 - shouldThrowIfTopicAndPatternAreNull
+- shouldThrowOnInvalidProcessorWrapperClassName
 - shouldUseNonDeprecatedConfigToSetCacheBytesWhenBothDeprecatedAndNonDeprecatedConfigsUsed
+- shouldWrapFixedKeyProcessorSupplier
+- shouldWrapProcessorSupplier
 - sourceShouldBeEqualIfNameAndPatternAreTheSame
 - sourceShouldBeEqualIfNameAndTopicListAreTheSame
 - sourceShouldNotBeEqualForDifferentNamesWithSamePattern
