@@ -115,6 +115,7 @@ org.apache.kafka.clients.NetworkClientTest:
 - testFailedConnectionToFirstAddress
 - testFailedConnectionToFirstAddressAfterReconnect
 - testHasNodeAvailableOrConnectionReady
+- testInflightRequestsDuringRebootstrap
 - testInvalidApiVersionsRequest
 - testLeastLoadedNode
 - testLeastLoadedNodeConsidersThrottledConnections
@@ -375,6 +376,7 @@ org.apache.kafka.clients.admin.KafkaAdminClientTest:
 - testTelemetryReporterIsDisabledByDefault
 - testTimeoutWithoutMetadata
 - testUnreachableBootstrapServer
+- testUnreachableBootstrapServerNoRebootstrap
 - testUnregisterBrokerFailure
 - testUnregisterBrokerSuccess
 - testUnregisterBrokerTimeoutAndFailureRetry
