@@ -19,7 +19,7 @@ package kafka.server
 
 import java.{lang, util}
 import java.util.{Properties, Map => JMap}
-import java.util.concurrent.CompletionStage
+import java.util.concurrent.{CompletionStage, TimeUnit}
 import java.util.concurrent.atomic.AtomicReference
 import kafka.controller.KafkaController
 import kafka.log.LogManager
@@ -832,6 +832,46 @@ class DynamicBrokerConfigTest {
     assertThrows(classOf[ConfigException], () =>  config.dynamicConfig.validate(newProps, perBrokerConfig = false))
     // validate per broker config
     assertThrows(classOf[ConfigException], () =>  config.dynamicConfig.validate(newProps, perBrokerConfig = true))
+  }
+
+  class DynamicLogConfigContext(origProps: Properties) {
+    val config = KafkaConfig(origProps)
+    val serverMock = Mockito.mock(classOf[BrokerServer])
+    val logManagerMock = Mockito.mock(classOf[LogManager])
+    Mockito.when(serverMock.config).thenReturn(config)
+    Mockito.when(serverMock.logManager).thenReturn(logManagerMock)
+    Mockito.when(logManagerMock.allLogs).thenReturn(Iterable.empty)
+    val currentDefaultLogConfig = new AtomicReference(new LogConfig(new Properties))
+    Mockito.when(logManagerMock.currentDefaultConfig).thenAnswer(_ => currentDefaultLogConfig.get())
+    Mockito.when(logManagerMock.reconfigureDefaultLogConfig(ArgumentMatchers.any(classOf[LogConfig])))
+      .thenAnswer(invocation => currentDefaultLogConfig.set(invocation.getArgument(0)))
+    config.dynamicConfig.initialize(None, None)
+    config.dynamicConfig.addBrokerReconfigurable(new DynamicLogConfig(logManagerMock, serverMock))
+  }
+
+  @Test
+  def testDynamicLogConfigHandlesSynonymsCorrectly(): Unit = {
+    val origProps = TestUtils.createBrokerConfig(0, null, port = 8181)
+    origProps.put(KafkaConfig.LogRetentionTimeMinutesProp, "1")
+    val ctx = new DynamicLogConfigContext(origProps)
+    assertEquals(TimeUnit.MINUTES.toMillis(1), ctx.config.logRetentionTimeMillis)
+    val props = new Properties()
+    props.put(KafkaConfig.MessageMaxBytesProp, "12345678")
+    ctx.config.dynamicConfig.updateDefaultConfig(props)
+    assertEquals(TimeUnit.MINUTES.toMillis(1), ctx.currentDefaultLogConfig.get().retentionMs)
+  }
+
+  @Test
+  def testLogRetentionTimeMinutesIsNotDynamicallyReconfigurable(): Unit = {
+    val origProps = TestUtils.createBrokerConfig(0, null, port = 8181)
+    origProps.put(KafkaConfig.LogRetentionTimeHoursProp, "1")
+    val ctx = new DynamicLogConfigContext(origProps)
+    assertEquals(TimeUnit.HOURS.toMillis(1), ctx.config.logRetentionTimeMillis)
+    val props = new Properties()
+    props.put(KafkaConfig.LogRetentionTimeMinutesProp, "3")
+    ctx.config.dynamicConfig.updateDefaultConfig(props)
+    assertEquals(TimeUnit.HOURS.toMillis(1), ctx.config.logRetentionTimeMillis)
+    assertFalse(ctx.currentDefaultLogConfig.get().originals().containsKey(KafkaConfig.LogRetentionTimeHoursProp))
   }
 }
 
