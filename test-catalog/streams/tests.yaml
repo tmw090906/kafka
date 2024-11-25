@@ -2024,6 +2024,7 @@ org.apache.kafka.streams.processor.internals.PartitionGroupTest:
 - shouldThrowIllegalStateExceptionUponHeadRecordLeaderEpochIfPartitionUnknown
 - shouldThrowIllegalStateExceptionUponNumBufferedIfPartitionUnknown
 - shouldThrowIllegalStateExceptionUponSetPartitionTimestampIfPartitionUnknown
+- shouldUpdateBufferSizeCorrectlyForSkippedRecords
 - shouldUpdateLags
 - shouldUpdatePartitionQueuesExpand
 - shouldUpdatePartitionQueuesShrink
@@ -2536,6 +2537,7 @@ org.apache.kafka.streams.processor.internals.StreamTaskTest:
 - shouldRespectCommitRequested
 - shouldRespectPunctuateCancellationStreamTime
 - shouldRespectPunctuateCancellationSystemTime
+- shouldResumePartitionWhenSkippingOverRecordsWithInvalidTs
 - shouldReturnStateManagerChangelogOffsets
 - shouldSetProcessorNodeOnContextBackToNullAfterSuccessfulPunctuate
 - shouldSkipCheckpointingSuspendedCreatedTask
