@@ -22,6 +22,7 @@ import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.internals.StreamsAssignmentInterface;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.Metric;
@@ -428,6 +429,11 @@ public class KafkaStreamsTelemetryIntegrationTest {
             final TestingMetricsInterceptingConsumer<byte[], byte[]> consumer = new TestingMetricsInterceptingConsumer<>(config, new ByteArrayDeserializer(), new ByteArrayDeserializer());
             INTERCEPTING_CONSUMERS.add(consumer);
             return consumer;
+        }
+
+        @Override
+        public Consumer<byte[], byte[]> getStreamsRebalanceProtocolConsumer(Map<String, Object> config, StreamsAssignmentInterface assignmentInterface) {
+            return null;
         }
 
         @Override

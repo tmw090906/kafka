@@ -39,4 +39,3 @@ public class StreamsOnAssignmentCallbackNeededEvent extends CompletableBackgroun
             ", assignment=" + assignment;
     }
 }
-

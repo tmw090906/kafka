@@ -110,6 +110,7 @@ import org.apache.kafka.image.MetadataDelta;
 import org.apache.kafka.image.MetadataImage;
 import org.apache.kafka.server.common.ApiMessageAndVersion;
 import org.apache.kafka.timeline.SnapshotRegistry;
+
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -934,56 +935,56 @@ public class GroupCoordinatorShard implements CoordinatorShard<CoordinatorRecord
                 );
                 break;
 
-            case 16:
+            case 15:
                 groupMetadataManager.replay(
                     (ConsumerGroupRegularExpressionKey) key.message(),
                     (ConsumerGroupRegularExpressionValue) Utils.messageOrNull(value)
                 );
                 break;
 
-            case 15:
+            case 16:
                 groupMetadataManager.replay(
                     (StreamsGroupMetadataKey) key.message(),
                     (StreamsGroupMetadataValue) messageOrNull(value)
                 );
                 break;
 
-            case 16:
+            case 17:
                 groupMetadataManager.replay(
                     (StreamsGroupPartitionMetadataKey) key.message(),
                     (StreamsGroupPartitionMetadataValue) messageOrNull(value)
                 );
                 break;
 
-            case 17:
+            case 18:
                 groupMetadataManager.replay(
                     (StreamsGroupMemberMetadataKey) key.message(),
                     (StreamsGroupMemberMetadataValue) messageOrNull(value)
                 );
                 break;
 
-            case 18:
+            case 19:
                 groupMetadataManager.replay(
                     (StreamsGroupTargetAssignmentMetadataKey) key.message(),
                     (StreamsGroupTargetAssignmentMetadataValue) messageOrNull(value)
                 );
                 break;
 
-            case 19:
+            case 20:
                 groupMetadataManager.replay(
                     (StreamsGroupTargetAssignmentMemberKey) key.message(),
                     (StreamsGroupTargetAssignmentMemberValue) messageOrNull(value)
                 );
                 break;
 
-            case 20:
+            case 21:
                 groupMetadataManager.replay(
                     (StreamsGroupCurrentMemberAssignmentKey) key.message(),
                     (StreamsGroupCurrentMemberAssignmentValue) messageOrNull(value)
                 );
                 break;
 
-            case 21:
+            case 22:
                 groupMetadataManager.replay(
                     (StreamsGroupTopologyKey) key.message(),
                     (StreamsGroupTopologyValue) messageOrNull(value)

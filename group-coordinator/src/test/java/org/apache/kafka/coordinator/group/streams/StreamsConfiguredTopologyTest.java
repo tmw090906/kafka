@@ -19,6 +19,7 @@ package org.apache.kafka.coordinator.group.streams;
 import org.apache.kafka.common.message.StreamsGroupDescribeResponseData;
 import org.apache.kafka.coordinator.group.streams.topics.ConfiguredInternalTopic;
 import org.apache.kafka.coordinator.group.streams.topics.ConfiguredSubtopology;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;

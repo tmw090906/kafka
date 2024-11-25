@@ -22,6 +22,7 @@ import org.apache.kafka.common.message.CreateTopicsRequestData.CreatableTopicCon
 import org.apache.kafka.common.utils.LogContext;
 import org.apache.kafka.coordinator.group.generated.StreamsGroupTopologyValue;
 import org.apache.kafka.coordinator.group.streams.TopicMetadata;
+
 import org.slf4j.Logger;
 
 import java.util.Collection;

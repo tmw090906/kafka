@@ -16,7 +16,7 @@
  */
 package org.apache.kafka.streams.integration;
 
-import kafka.api.IntegrationTestHarness;
+
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.utils.Exit;
@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Timeout(600)
 @Tag("integration")
-public class SmokeTestDriverIntegrationTest extends IntegrationTestHarness {
+public class SmokeTestDriverIntegrationTest {
 
     @Override
     public int brokerCount() {
