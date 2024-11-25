@@ -1087,6 +1087,11 @@ org.apache.kafka.clients.consumer.internals.AsyncKafkaConsumerTest:
 - testWakeupAfterNonEmptyFetch
 - testWakeupBeforeCallingPoll
 - testWakeupCommitted
+org.apache.kafka.clients.consumer.internals.AutoOffsetResetStrategyTest:
+- testEqualsAndHashCode
+- testFromString
+- testIsValid
+- testValidator
 org.apache.kafka.clients.consumer.internals.CommitRequestManagerTest:
 - testAsyncAutocommitNotRetriedAfterException
 - testAsyncCommitWhileCoordinatorUnknownIsSentOutWhenCoordinatorDiscovered
@@ -3158,7 +3163,6 @@ org.apache.kafka.common.message.SimpleExampleMessageTest:
 - testTaggedUuid
 - testToString
 org.apache.kafka.common.metrics.JmxReporterTest:
-- testDeprecatedJmxPrefixWithDefaultMetrics
 - testJmxPrefix
 - testJmxRegistration
 - testJmxRegistrationSanitization
