@@ -1081,6 +1081,7 @@ org.apache.kafka.clients.consumer.internals.AsyncKafkaConsumerTest:
 - testUnsubscribeWithInvalidTopicException
 - testUnsubscribeWithTopicAuthorizationException
 - testUnsubscribeWithoutGroupId
+- testUpdatePatternSubscriptionEventGeneratedOnlyIfPatternUsed
 - testVerifyApplicationEventOnShutdown
 - testWakeupAfterEmptyFetch
 - testWakeupAfterNonEmptyFetch
