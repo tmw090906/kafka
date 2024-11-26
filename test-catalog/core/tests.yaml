@@ -427,6 +427,7 @@ kafka.api.PlaintextAdminIntegrationTest:
 - testClose
 - testConsumeAfterDeleteRecords
 - testConsumerGroups
+- testConsumerGroupsDeprecatedConsumerGroupState
 - testCreateDeleteTopics
 - testCreateExistingTopicsThrowTopicExistsException
 - testCreatePartitionWithOptionRetryOnQuotaViolation
@@ -559,10 +560,12 @@ kafka.api.PlaintextConsumerSubscriptionTest:
 - testUnsubscribeTopic
 kafka.api.PlaintextConsumerTest:
 - testAutoOffsetReset
+- testCloseLeavesGroupOnInterrupt
 - testClusterResourceListener
 - testConsumeMessagesWithCreateTime
 - testConsumeMessagesWithLogAppendTime
 - testConsumingWithNullGroupId
+- testCoordinatorFailover
 - testEndOffsets
 - testFetchOffsetsForTime
 - testGroupConsumption
@@ -670,6 +673,7 @@ kafka.api.SaslGssapiSslEndToEndAuthorizationTest:
 - testTwoConsumersWithDifferentSaslCredentials
 kafka.api.SaslMultiMechanismConsumerTest:
 - testClusterResourceListener
+- testCoordinatorFailover
 - testMultipleBrokerMechanisms
 - testSimpleConsumption
 kafka.api.SaslOAuthBearerSslEndToEndAuthorizationTest:
@@ -688,9 +692,11 @@ kafka.api.SaslOAuthBearerSslEndToEndAuthorizationTest:
 - testTwoConsumersWithDifferentSaslCredentials
 kafka.api.SaslPlainPlaintextConsumerTest:
 - testClusterResourceListener
+- testCoordinatorFailover
 - testSimpleConsumption
 kafka.api.SaslPlaintextConsumerTest:
 - testClusterResourceListener
+- testCoordinatorFailover
 - testSimpleConsumption
 kafka.api.SaslScramSslEndToEndAuthorizationTest:
 - testAuthentications
@@ -728,6 +734,7 @@ kafka.api.SaslSslAdminIntegrationTest:
 - testLegacyAclOpsNeverAffectOrReturnPrefixed
 kafka.api.SaslSslConsumerTest:
 - testClusterResourceListener
+- testCoordinatorFailover
 - testSimpleConsumption
 kafka.api.SslAdminIntegrationTest:
 - testAclAuthorizationDenied
@@ -754,6 +761,7 @@ kafka.api.SslAdminIntegrationTest:
 - testSynchronousAuthorizerAclUpdatesBlockRequestThreads
 kafka.api.SslConsumerTest:
 - testClusterResourceListener
+- testCoordinatorFailover
 - testSimpleConsumption
 kafka.api.SslEndToEndAuthorizationTest:
 - testNoConsumeWithDescribeAclViaAssign
@@ -787,6 +795,7 @@ kafka.api.TransactionsExpirationTest:
 kafka.api.TransactionsTest:
 - testAbortTransactionTimeout
 - testBasicTransactions
+- testBumpTransactionalEpochWithTV2Disabled
 - testBumpTransactionalEpochWithTV2Enabled
 - testCommitTransactionTimeout
 - testConsecutivelyRunInitTransactions
@@ -800,6 +809,7 @@ kafka.api.TransactionsTest:
 - testInitTransactionsTimeout
 - testMultipleMarkersOneLeader
 - testOffsetMetadataInSendOffsetsToTransaction
+- testReadCommittedConsumerShouldNotSeeUndecidedData
 - testSendOffsetsToTransactionTimeout
 - testSendOffsetsWithGroupMetadata
 kafka.api.TransactionsWithMaxInFlightOneTest:
@@ -1937,6 +1947,7 @@ kafka.log.remote.RemoteLogManagerTest:
 - testFailedCopyShouldDeleteTheDanglingSegment
 - testFailedDeleteExpiredSegments
 - testFetchNextSegmentWithTxnIndex
+- testFetchOffsetByTimestampWithTieredStorageDoesNotFetchIndexWhenExistsLocally
 - testFetchQuotaManagerConfig
 - testFetchRemoteLogSegmentMetadata
 - testFindHighestRemoteOffset
@@ -2029,6 +2040,7 @@ kafka.network.ConnectionQuotasTest:
 - testNonDefaultConnectionCountLimitAndRateLimit
 - testRejectedIpConnectionUnrecordedFromConnectionRateQuotas
 kafka.network.DynamicConnectionQuotaTest:
+- testDynamicConnectionQuota
 - testDynamicIpConnectionRateQuota
 - testDynamicListenerConnectionCreationRateQuota
 - testDynamicListenerConnectionQuota
@@ -3388,6 +3400,7 @@ kafka.server.OffsetsForLeaderEpochRequestTest:
 kafka.server.PermissiveControllerMutationQuotaTest:
 - testControllerMutationQuotaViolation
 kafka.server.ProduceRequestTest:
+- quorum
 - testCorruptLz4ProduceRequest
 - testProduceToNonReplica
 - testSimpleProduceRequest
@@ -3917,16 +3930,23 @@ kafka.server.share.SharePartitionTest:
 - testWriteShareGroupStateWithWriteException
 kafka.test.api.ShareConsumerTest:
 - testAcknowledgeCommitCallbackCallsShareConsumerDisallowed
+- testAcknowledgeCommitCallbackCallsShareConsumerWakeup
+- testAcknowledgeCommitCallbackThrowsException
+- testAcknowledgementCommitCallbackInvalidRecordStateException
 - testAcknowledgementCommitCallbackOnClose
 - testAcknowledgementCommitCallbackSuccessfulAcknowledgement
+- testAcknowledgementSentOnSubscriptionChange
 - testAcquisitionLockTimeoutOnConsumer
 - testConsumerCloseInGroupSequential
 - testControlRecordsSkipped
 - testExplicitAcknowledgeCommitSuccess
 - testExplicitAcknowledgeReleaseAccept
+- testExplicitAcknowledgeReleaseClose
 - testExplicitAcknowledgeReleasePollAccept
 - testExplicitAcknowledgeSuccess
 - testExplicitAcknowledgeThrowsNotInBatch
+- testExplicitAcknowledgementCommitAsync
+- testExplicitAcknowledgementCommitAsyncPartialBatch
 - testFetchRecordLargerThanMaxPartitionFetchBytes
 - testHeaders
 - testHeadersSerializerDeserializer
@@ -3935,12 +3955,14 @@ kafka.test.api.ShareConsumerTest:
 - testImplicitAcknowledgementCommitAsync
 - testLsoMovementByRecordsDeletion
 - testMaxPollRecords
+- testMultipleConsumersInGroupConcurrentConsumption
 - testMultipleConsumersInGroupFailureConcurrentConsumption
 - testMultipleConsumersInGroupSequentialConsumption
 - testMultipleConsumersInMultipleGroupsConcurrentConsumption
 - testMultipleConsumersWithDifferentGroupIds
 - testPollNoSubscribeFails
 - testPollThrowsInterruptExceptionIfInterrupted
+- testShareAutoOffsetResetDefaultValue
 - testShareAutoOffsetResetEarliest
 - testShareAutoOffsetResetEarliestAfterLsoMovement
 - testShareAutoOffsetResetMultipleGroupsWithDifferentValue
