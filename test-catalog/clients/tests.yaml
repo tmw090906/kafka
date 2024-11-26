@@ -1075,6 +1075,8 @@ org.apache.kafka.clients.consumer.internals.AsyncKafkaConsumerTest:
 - testSubscribePatternGeneratesEvent
 - testSubscribeToEmptyListActsAsUnsubscribe
 - testSubscribeToNullTopicCollection
+- testSubscribeToRe2JPatternGeneratesEvent
+- testSubscribeToRe2JPatternThrowsIfNoGroupId
 - testSubscribeToRe2JPatternValidation
 - testSubscriptionOnEmptyTopic
 - testSubscriptionOnNullTopic
@@ -1982,6 +1984,7 @@ org.apache.kafka.clients.consumer.internals.ShareConsumeRequestManagerTest:
 - testAcknowledgeOnClose
 - testAcknowledgeOnCloseWithPendingCommitAsync
 - testAcknowledgeOnCloseWithPendingCommitSync
+- testAcknowledgementCommitCallbackMultiplePartitionCommitAsync
 - testBatchingAcknowledgeRequestStates
 - testCallbackHandlerConfig
 - testCloseShouldBeIdempotent
@@ -2161,6 +2164,7 @@ org.apache.kafka.clients.consumer.internals.SubscriptionStateTest:
 - testMaybeCompleteValidationAfterOffsetReset
 - testMaybeCompleteValidationAfterPositionChange
 - testMaybeValidatePositionForCurrentLeader
+- testMixedPatternSubscriptionNotAllowed
 - testOffsetResetWhileAwaitingValidation
 - testPositionOrNull
 - testPreferredReadReplicaLease
@@ -2169,6 +2173,7 @@ org.apache.kafka.clients.consumer.internals.SubscriptionStateTest:
 - testSeekUnvalidatedWithNoOffsetEpoch
 - testSeekUnvalidatedWithOffsetEpoch
 - testSeekValidatedShouldClearAwaitingValidation
+- testSubscribeToRe2JPattern
 - testTruncationDetectionUnknownDivergentOffsetWithResetPolicy
 - testTruncationDetectionUnknownDivergentOffsetWithoutResetPolicy
 - testTruncationDetectionWithResetPolicy
@@ -2243,6 +2248,8 @@ org.apache.kafka.clients.consumer.internals.events.ApplicationEventProcessorTest
 - testPrepClosingCommitEvents
 - testProcessUnsubscribeEventWithGroupId
 - testProcessUnsubscribeEventWithoutGroupId
+- testR2JPatternSubscriptionEventFailureWithMixedSubscriptionType
+- testR2JPatternSubscriptionEventSuccess
 - testResetOffsetEvent
 - testSeekUnvalidatedEvent
 - testSeekUnvalidatedEventWithException
