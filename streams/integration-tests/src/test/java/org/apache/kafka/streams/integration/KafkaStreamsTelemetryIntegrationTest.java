@@ -432,7 +432,8 @@ public class KafkaStreamsTelemetryIntegrationTest {
         }
 
         @Override
-        public Consumer<byte[], byte[]> getStreamsRebalanceProtocolConsumer(Map<String, Object> config, StreamsAssignmentInterface assignmentInterface) {
+        public Consumer<byte[], byte[]> getStreamsRebalanceProtocolConsumer(final Map<String, Object> config,
+                                                                            final StreamsAssignmentInterface assignmentInterface) {
             return null;
         }
 

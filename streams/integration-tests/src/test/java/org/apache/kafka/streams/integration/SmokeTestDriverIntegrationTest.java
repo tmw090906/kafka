@@ -16,21 +16,26 @@
  */
 package org.apache.kafka.streams.integration;
 
-
-
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.utils.Exit;
+import org.apache.kafka.coordinator.group.GroupCoordinatorConfig;
+import org.apache.kafka.server.config.ServerConfigs;
 import org.apache.kafka.streams.GroupProtocol;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.StreamsConfig.InternalConfig;
+import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
+import org.apache.kafka.streams.integration.utils.IntegrationTestUtils;
 import org.apache.kafka.streams.tests.SmokeTestClient;
 import org.apache.kafka.streams.tests.SmokeTestDriver;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -45,11 +50,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Timeout(600)
 @Tag("integration")
 public class SmokeTestDriverIntegrationTest {
+    
+    
+    public static EmbeddedKafkaCluster cluster;
 
-    @Override
-    public int brokerCount() {
-        return 3;
+    @BeforeAll
+    public static void startCluster() throws IOException {
+        final Properties props = new Properties();
+        props.setProperty(GroupCoordinatorConfig.GROUP_COORDINATOR_REBALANCE_PROTOCOLS_CONFIG, "classic,consumer,streams");
+        props.setProperty(ServerConfigs.UNSTABLE_API_VERSIONS_ENABLE_CONFIG, "true");
+        cluster = new EmbeddedKafkaCluster(3, props);
+        cluster.start();
     }
+
+    @AfterAll
+    public static void closeCluster() {
+        cluster.stop();
+    }
+
 
     private static class Driver extends Thread {
         private final String bootstrapServers;
@@ -86,21 +104,6 @@ public class SmokeTestDriverIntegrationTest {
 
     }
 
-    @Override
-    public boolean isStreamsGroupTest() {
-        return true;
-    }
-
-    @Override
-    public boolean isZkMigrationTest() {
-        return false;
-    }
-
-    @Override
-    public boolean isKRaftTest() {
-        return true;
-    }
-
     // In this test, we try to keep creating new stream, and closing the old one, to maintain only 3 streams alive.
     // During the new stream added and old stream left, the stream process should still complete without issue.
     // We set 2 timeout condition to fail the test before passing the verification:
@@ -122,27 +125,9 @@ public class SmokeTestDriverIntegrationTest {
         int numClientsCreated = 0;
         final ArrayList<SmokeTestClient> clients = new ArrayList<>();
 
-        for (final String topic: SmokeTestDriver.topics()) {
-            deleteTopic(topic, listenerName());
-        }
+        IntegrationTestUtils.cleanStateBeforeTest(cluster, SmokeTestDriver.topics());
 
-        for (final String topic: new String[]{
-            "data",
-            "echo",
-            "max",
-            "min", "min-suppressed", "min-raw",
-            "dif",
-            "sum",
-            "sws-raw", "sws-suppressed",
-            "cnt",
-            "avg",
-            "tagg",
-            "fk"
-        }) {
-            createTopic(topic, 3, 1, new Properties(), listenerName(), new Properties());
-        }
-
-        final String bootstrapServers = bootstrapServers(listenerName());
+        final String bootstrapServers = cluster.bootstrapServers();
         final Driver driver = new Driver(bootstrapServers, 10, 1000);
         driver.start();
         System.out.println("started driver");
@@ -202,7 +187,5 @@ public class SmokeTestDriverIntegrationTest {
             throw new AssertionError(driver.exception());
         }
         assertTrue(driver.result().passed(), driver.result().result());
-
-
     }
 }
