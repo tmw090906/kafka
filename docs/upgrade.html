@@ -93,6 +93,19 @@
             Given your current and target versions, a downgrade is only possible if there are no metadata changes in the versions between.</li>
     </ol>
 
+    <h5><a id="upgrade_372_notable" href="#upgrade_372_notable">Notable changes in 3.7.2</a></h5>
+    <ul>
+        <li>The consumer gets an important bug-fix for KIP-714.
+            See <a href="https://issues.apache.org/jira/browse/KAFKA-17731">KAFKA-17731</a> for more details.
+        </li>
+        <li>Kafka Streams, using EOSv2, might commit incorrect offsets potentially leading to data loss in repartition topics.
+            See <a href="https://issues.apache.org/jira/browse/KAFKA-17635">KAFKA-17635</a> for more details.
+        </li>
+        <li>Kafka Streams might pause(), but never resume() partitions.
+            See <a href="https://issues.apache.org/jira/browse/KAFKA-17299">KAFKA-17299</a> for more details.
+        </li>
+    </ul>
+
     <h5><a id="upgrade_371_notable" href="#upgrade_371_notable">Notable changes in 3.7.1</a></h5>
     <ul>
         <li>MirrorMaker 2 can now emit checkpoints for offsets mirrored before the start of the Checkpoint task for improved offset translation.
