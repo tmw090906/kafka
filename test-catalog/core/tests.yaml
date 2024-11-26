@@ -4009,6 +4009,8 @@ kafka.tools.StorageToolTest:
 - testFormatWithInitialControllersFlag
 - testFormatWithInvalidFeature
 - testFormatWithInvalidKRaftVersionLevel
+- testFormatWithNoInitialControllersFlagAndInitialControllersFlagFails
+- testFormatWithNoInitialControllersFlagAndStandaloneFlagFails
 - testFormatWithNoInitialControllersSucceedsOnController
 - testFormatWithReleaseVersion
 - testFormatWithReleaseVersionAndKRaftVersion

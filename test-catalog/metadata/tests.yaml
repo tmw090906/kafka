@@ -842,12 +842,15 @@ org.apache.kafka.metadata.storage.FormatterTest:
 - testFormatWithInitialVoters
 - testFormatWithInitialVotersFailsWithOlderKraftVersion
 - testFormatWithInitialVotersFailsWithOlderMetadataVersion
+- testFormatWithNoInitialControllers
+- testFormatWithNoInitialControllersFailsWithOlderKraftVersion
 - testFormatWithOlderReleaseVersion
 - testFormatWithScram
 - testFormatWithScramFailsOnUnsupportedReleaseVersions
 - testFormatWithUnstableReleaseVersion
 - testFormatWithUnstableReleaseVersionFailsWithoutEnableUnstable
 - testFormatWithoutInitialVotersFailsWithNewerKraftVersion
+- testFormatWithoutNoInitialControllersFailsWithNewerKraftVersion
 - testFormatterFailsOnAlreadyFormatted
 - testFormatterFailsOnUnwritableDirectory
 - testFormattingCreatesLogDirId
