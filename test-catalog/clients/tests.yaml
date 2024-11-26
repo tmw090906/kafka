@@ -2335,10 +2335,16 @@ org.apache.kafka.clients.producer.KafkaProducerTest:
 - testSendTxnOffsetsWithGroupId
 - testSendTxnOffsetsWithGroupMetadata
 - testSerializerClose
+- testShouldNotCallMetricReporterMetricRemovalWithExistingProducerMetric
+- testShouldOnlyCallMetricReporterMetricChangeOnceWithExistingProducerMetric
+- testSubscribingCustomMetricsDoesntAffectProducerMetrics
+- testSubscribingCustomMetricsWithSameNameDoesntAffectProducerMetrics
 - testTopicExpiryInMetadata
 - testTopicNotExistingInMetadata
 - testTopicRefreshInMetadata
 - testTransactionalMethodThrowsWhenSenderClosed
+- testUnSubscribingNonExisingMetricsDoesntCauseError
+- testUnsubscribingCustomMetricWithSameNameAsExistingMetricDoesntAffectProducerMetric
 - testUnusedConfigs
 org.apache.kafka.clients.producer.MockProducerTest:
 - shouldAbortEmptyTransaction
@@ -2623,7 +2629,6 @@ org.apache.kafka.clients.producer.internals.TransactionManagerTest:
 - testBumpTransactionalEpochOnRecoverableAddPartitionRequestError
 - testBumpTransactionalEpochOnTimeout
 - testBumpTransactionalEpochOnUnknownProducerIdError
-- testCanBumpEpochDuringCoordinatorDisconnect
 - testCancelUnsentAddPartitionsAndProduceOnAbort
 - testCommitTransactionWithInFlightProduceRequest
 - testCommitTransactionWithUnsentProduceRequest
@@ -2635,7 +2640,7 @@ org.apache.kafka.clients.producer.internals.TransactionManagerTest:
 - testDropCommitOnBatchExpiry
 - testDuplicateSequenceAfterProducerReset
 - testEndTxnNotSentIfIncompleteBatches
-- testEpochBumpAfterLastInflightBatchFails
+- testEpochBumpAfterLastInFlightBatchFailsIdempotentProducer
 - testEpochUpdateAfterBumpFromEndTxnResponseInV2
 - testFailIfNotReadyForSendAfterAbortableError
 - testFailIfNotReadyForSendAfterFatalError
@@ -2683,7 +2688,9 @@ org.apache.kafka.clients.producer.internals.TransactionManagerTest:
 - testLookupCoordinatorOnDisconnectBeforeSend
 - testLookupCoordinatorOnNotCoordinatorError
 - testMaybeAddPartitionToTransaction
+- testMaybeResolveSequencesTransactionalProducer
 - testMultipleAddPartitionsPerForOneProduce
+- testNeedToTriggerEpochBumpFromClientDuringCoordinatorDisconnect
 - testNoDrainWhenPartitionsPending
 - testNoFailedBatchHandlingWhenTxnManagerIsInFatalError
 - testNoProducerIdResetAfterLastInFlightBatchSucceeds
