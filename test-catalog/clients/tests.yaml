@@ -1168,6 +1168,8 @@ org.apache.kafka.clients.consumer.internals.ConsumerHeartbeatRequestManagerTest:
 - testPollOnCloseGeneratesRequestIfNeeded
 - testPollTimerExpiration
 - testPollTimerExpirationShouldNotMarkMemberStaleIfMemberAlreadyLeaving
+- testRegexInHeartbeatLifecycle
+- testRegexInJoiningHeartbeat
 - testSendingLeaveGroupHeartbeatWhenPreviousOneInFlight
 - testSkippingHeartbeat
 - testSuccessfulHeartbeatTiming
@@ -2174,6 +2176,7 @@ org.apache.kafka.clients.consumer.internals.SubscriptionStateTest:
 - testSeekUnvalidatedWithOffsetEpoch
 - testSeekValidatedShouldClearAwaitingValidation
 - testSubscribeToRe2JPattern
+- testSubscriptionPattern
 - testTruncationDetectionUnknownDivergentOffsetWithResetPolicy
 - testTruncationDetectionUnknownDivergentOffsetWithoutResetPolicy
 - testTruncationDetectionWithResetPolicy
