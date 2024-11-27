@@ -821,6 +821,7 @@ org.apache.kafka.clients.consumer.MockConsumerTest:
 - endOffsetsShouldBeIdempotent
 - shouldNotClearRecordsForPausedPartitions
 - testConsumerRecordsIsEmptyWhenReturningNoRecords
+- testRe2JPatternSubscription
 - testRebalanceListener
 - testSimpleMock
 org.apache.kafka.clients.consumer.MockShareConsumerTest:
