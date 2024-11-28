@@ -1652,7 +1652,6 @@ kafka.log.LogConfigTest:
 - testLocalLogRetentionDerivedProps
 - testLocalLogRetentionProps
 - testOverriddenConfigsAsLoggableString
-- testTimestampBeforeMaxMsUsesDeprecatedConfig
 - testToEnrichedRst
 - testToHtml
 - testToHtmlTable
@@ -2669,8 +2668,6 @@ kafka.server.DynamicBrokerConfigTest:
 - testUpdateMetricReporters
 - testUpdateMetricReportersNoJmxReporter
 kafka.server.DynamicBrokerReconfigurationTest:
-- testAddRemoveSaslListeners
-- testAdvertisedListenerUpdate
 - testConfigDescribeUsingAdminClient
 - testConsecutiveConfigChange
 - testDefaultTopicConfig
