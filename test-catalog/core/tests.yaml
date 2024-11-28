@@ -198,7 +198,6 @@ kafka.admin.RemoteTopicCrudTest:
 - testEnableRemoteLogOnExistingTopicTest
 - testEnableRemoteLogWhenSystemRemoteStorageIsDisabled
 - testTopicDeletion
-- testUpdateInvalidRemoteStorageConfigUnderZK
 - testUpdateTopicConfigWithDisablingRemoteStorage
 - testUpdateTopicConfigWithInheritedLocalRetentionSize
 - testUpdateTopicConfigWithInheritedLocalRetentionTime
@@ -2613,7 +2612,6 @@ kafka.server.DeleteRecordsRequestTest:
 - testErrorWhenDeletingRecordsWithInvalidTopic
 kafka.server.DeleteTopicsRequestTest:
 - testDeleteTopicsVersions
-- testErrorDeleteTopicRequests
 - testTopicDeletionClusterHasOfflinePartitions
 - testValidDeleteTopicRequests
 kafka.server.DeleteTopicsRequestWithDeletionDisabledTest:

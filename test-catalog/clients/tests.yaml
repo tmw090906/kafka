@@ -269,9 +269,7 @@ org.apache.kafka.clients.admin.KafkaAdminClientTest:
 - testDescribeFeaturesSuccess
 - testDescribeGroupsWithBothUnsupportedApis
 - testDescribeLogDirs
-- testDescribeLogDirsDeprecated
 - testDescribeLogDirsOfflineDir
-- testDescribeLogDirsOfflineDirDeprecated
 - testDescribeLogDirsPartialFailure
 - testDescribeLogDirsWithVolumeBytes
 - testDescribeMetadataQuorumFailure
