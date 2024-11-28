@@ -96,7 +96,7 @@ public class CommitRequestManager implements RequestManager, MemberStateListener
     private Optional<Integer> lastEpochSentOnCommit;
 
     /**
-     *  The member ID and latest member epoch received via the {@link MemberStateListener#onMemberEpochUpdated(Optional, String)},
+     *  The member ID and latest member epoch received via the {@link MemberStateListener#onMemberEpochUpdated(Optional, Optional)},
      *  to be included in the OffsetFetch and OffsetCommit requests. This will have
      *  the latest memberEpoch received from the broker.
      */

@@ -17,10 +17,10 @@
 {
   "type": "data",
   "name": "StreamsGroupTargetAssignmentMetadataKey",
-  "validVersions": "18",
+  "validVersions": "20",
   "flexibleVersions": "none",
   "fields": [
-    { "name": "GroupId", "type": "string", "versions": "18",
+    { "name": "GroupId", "type": "string", "versions": "20",
       "about": "The group id." }
   ]
 }

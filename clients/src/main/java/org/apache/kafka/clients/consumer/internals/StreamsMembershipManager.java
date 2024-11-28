@@ -16,9 +16,9 @@
  */
 package org.apache.kafka.clients.consumer.internals;
 
-import org.apache.kafka.clients.consumer.internals.events.BackgroundEventHandler;
-import org.apache.kafka.clients.consumer.internals.events.StreamsOnAssignmentCallbackCompletedEvent;
-import org.apache.kafka.clients.consumer.internals.events.StreamsOnAssignmentCallbackNeededEvent;
+import org.apache.kafka.clients.consumer.internals.events.StreamsOnAllTasksLostCallbackCompletedEvent;
+import org.apache.kafka.clients.consumer.internals.events.StreamsOnTasksAssignedCallbackCompletedEvent;
+import org.apache.kafka.clients.consumer.internals.events.StreamsOnTasksRevokedCallbackCompletedEvent;
 import org.apache.kafka.clients.consumer.internals.metrics.ConsumerRebalanceMetricsManager;
 import org.apache.kafka.clients.consumer.internals.metrics.RebalanceMetricsManager;
 import org.apache.kafka.common.KafkaException;
@@ -28,13 +28,12 @@ import org.apache.kafka.common.metrics.Metrics;
 import org.apache.kafka.common.protocol.Errors;
 import org.apache.kafka.common.requests.StreamsGroupHeartbeatRequest;
 import org.apache.kafka.common.requests.StreamsGroupHeartbeatResponse;
-import org.apache.kafka.common.telemetry.internals.ClientTelemetryProvider;
-import org.apache.kafka.common.telemetry.internals.ClientTelemetryReporter;
 import org.apache.kafka.common.utils.LogContext;
 import org.apache.kafka.common.utils.Time;
 
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -145,8 +144,6 @@ public class StreamsMembershipManager implements RequestManager {
 
     private final SubscriptionState subscriptionState;
 
-    private final BackgroundEventHandler backgroundEventHandler;
-
     private MemberState state;
 
     private final String groupId;
@@ -165,7 +162,7 @@ public class StreamsMembershipManager implements RequestManager {
 
     private boolean rejoinedWhileReconciliationInProgress;
 
-    private final Optional<ClientTelemetryReporter> clientTelemetryReporter;
+    private final List<MemberStateListener> stateUpdatesListeners = new ArrayList<>();
 
     private LocalAssignment targetAssignment = LocalAssignment.NONE;
 
@@ -183,8 +180,6 @@ public class StreamsMembershipManager implements RequestManager {
                                     final StreamsAssignmentInterface streamsAssignmentInterface,
                                     final SubscriptionState subscriptionState,
                                     final LogContext logContext,
-                                    final Optional<ClientTelemetryReporter> clientTelemetryReporter,
-                                    final BackgroundEventHandler backgroundEventHandler,
                                     final Time time,
                                     final Metrics metrics) {
         log = logContext.logger(StreamsMembershipManager.class);
@@ -192,8 +187,6 @@ public class StreamsMembershipManager implements RequestManager {
         this.groupId = groupId;
         this.streamsAssignmentInterface = streamsAssignmentInterface;
         this.subscriptionState = subscriptionState;
-        this.clientTelemetryReporter = clientTelemetryReporter;
-        this.backgroundEventHandler = backgroundEventHandler;
         metricsManager = new ConsumerRebalanceMetricsManager(metrics);
         this.time = time;
     }
@@ -229,6 +222,14 @@ public class StreamsMembershipManager implements RequestManager {
             state == MemberState.FENCED ||
             state == MemberState.FATAL ||
             state == MemberState.STALE;
+    }
+
+    public void registerStateListener(MemberStateListener listener) {
+        stateUpdatesListeners.add(Objects.requireNonNull(listener, "State updates listener cannot be null"));
+    }
+
+    void notifyEpochChange(Optional<Integer> epoch) {
+        stateUpdatesListeners.forEach(stateListener -> stateListener.onMemberEpochUpdated(epoch, memberId));
     }
 
     private void transitionToJoining() {
@@ -276,8 +277,9 @@ public class StreamsMembershipManager implements RequestManager {
     private void transitionToStale() {
         transitionTo(MemberState.STALE);
 
-        CompletableFuture<Void> onAllTasksRevokedDone = invokeRevokingAllTasksCallback();
-        staleMemberAssignmentRelease = onAllTasksRevokedDone.whenComplete((result, error) -> {
+        final CompletableFuture<Void> onAllTasksLostCallbackExecution =
+            streamsAssignmentInterface.requestOnAllTasksLostCallbackInvocation();
+        staleMemberAssignmentRelease = onAllTasksLostCallbackExecution.whenComplete((result, error) -> {
             if (error != null) {
                 log.error("Task revocation callback invocation failed " +
                     "after member left group due to expired poll timer.", error);
@@ -293,6 +295,7 @@ public class StreamsMembershipManager implements RequestManager {
         MemberState previousState = state;
         transitionTo(MemberState.FATAL);
         log.error("Member {} with epoch {} transitioned to fatal state", memberIdInfoForLog(), memberEpoch);
+        notifyEpochChange(Optional.empty());
 
         if (previousState == MemberState.UNSUBSCRIBED) {
             log.debug("Member {} with epoch {} got fatal error from the broker but it already " +
@@ -308,8 +311,8 @@ public class StreamsMembershipManager implements RequestManager {
             return;
         }
 
-        CompletableFuture<Void> callbackResult = invokeRevokingAllTasksCallback();
-        callbackResult.whenComplete((result, error) -> {
+        CompletableFuture<Void> onAllTasksLostCallbackExecuted = streamsAssignmentInterface.requestOnAllTasksLostCallbackInvocation();
+        onAllTasksLostCallbackExecuted.whenComplete((result, error) -> {
             if (error != null) {
                 log.error("onTaskAssignment callback invocation failed while releasing assignment" +
                     "after member failed with fatal error.", error);
@@ -359,7 +362,15 @@ public class StreamsMembershipManager implements RequestManager {
     }
 
     private void updateMemberEpoch(int newEpoch) {
-        memberEpoch = newEpoch;
+        boolean newEpochReceived = this.memberEpoch != newEpoch;
+        this.memberEpoch = newEpoch;
+        if (newEpochReceived) {
+            if (memberEpoch > 0) {
+                notifyEpochChange(Optional.of(memberEpoch));
+            } else {
+                notifyEpochChange(Optional.empty());
+            }
+        }
     }
 
     private void clearPendingTaskAssignment() {
@@ -432,15 +443,6 @@ public class StreamsMembershipManager implements RequestManager {
             log.debug("Ignoring heartbeat response received from broker. Member {} is in {} state" +
                 " so it's not a member of the group. ", memberId, state);
             return;
-        }
-
-        // Update the group member id label in the client telemetry reporter if the member id has
-        // changed. Initially the member id is empty, and it is updated when the member joins the
-        // group. This is done here to avoid updating the label on every heartbeat response. Also
-        // check if the member id is null, as the schema defines it as nullable.
-        if (responseData.memberId() != null && !responseData.memberId().equals(memberId)) {
-            clientTelemetryReporter.ifPresent(reporter -> reporter.updateMetricsLabels(
-                Collections.singletonMap(ClientTelemetryProvider.GROUP_MEMBER_ID, responseData.memberId())));
         }
 
         memberId = responseData.memberId();
@@ -519,17 +521,17 @@ public class StreamsMembershipManager implements RequestManager {
         log.debug("Member {} with epoch {} transitioned to {} state. It will release its " +
             "assignment and rejoin the group.", memberIdInfoForLog(), memberEpoch, MemberState.FENCED);
 
-        CompletableFuture<Void> callbackResult = invokeRevokingAllTasksCallback();
+        CompletableFuture<Void> callbackResult = streamsAssignmentInterface.requestOnAllTasksLostCallbackInvocation();
         callbackResult.whenComplete((result, error) -> {
             if (error != null) {
-                log.error("onTaskAssignment callback invocation failed while releasing assignment" +
+                log.error("onAllTasksLost callback invocation failed while releasing assignment" +
                     " after member got fenced. Member will rejoin the group anyways.", error);
             }
             clearTaskAndPartitionAssignment();
             if (state == MemberState.FENCED) {
                 transitionToJoining();
             } else {
-                log.debug("Fenced member onTaskAssignment callback completed but the state has " +
+                log.debug("Fenced member onAllTasksLost callback completed but the state has " +
                     "already changed to {}, so the member won't rejoin the group", state);
             }
         });
@@ -615,15 +617,19 @@ public class StreamsMembershipManager implements RequestManager {
 
         CompletableFuture<Void> onGroupLeft = new CompletableFuture<>();
         leaveGroupInProgress = Optional.of(onGroupLeft);
-        CompletableFuture<Void> onAllTasksRevokedDone = prepareLeaving();
-        onAllTasksRevokedDone.whenComplete((__, callbackError) -> leaving(callbackError));
+        CompletableFuture<Void> onAllTasksRevokedCallbackExecuted = prepareLeaving();
+        onAllTasksRevokedCallbackExecuted.whenComplete((__, callbackError) -> leaving(callbackError));
 
         return onGroupLeft;
     }
 
     private CompletableFuture<Void> prepareLeaving() {
         transitionTo(MemberState.PREPARE_LEAVING);
-        return invokeRevokingAllTasksCallback();
+        if (memberEpoch > 0) {
+            return revokeActiveTasks(toTaskIdSet(currentAssignment.activeTasks));
+        } else {
+            return releaseLostActiveTasks();
+        }
     }
 
     private void leaving(Throwable callbackError) {
@@ -636,8 +642,8 @@ public class StreamsMembershipManager implements RequestManager {
                     "to clear its assignment and send a leave group heartbeat",
                 memberIdInfoForLog());
         }
-        subscriptionState.unsubscribe();
         clearTaskAndPartitionAssignment();
+        subscriptionState.unsubscribe();
         transitionToSendingLeaveGroup(false);
     }
 
@@ -709,41 +715,54 @@ public class StreamsMembershipManager implements RequestManager {
 
         // ToDo: add standby and warmup tasks
         SortedSet<StreamsAssignmentInterface.TaskId> assignedActiveTasks = toTaskIdSet(targetAssignment.activeTasks);
+        SortedSet<StreamsAssignmentInterface.TaskId> ownedActiveTasks = toTaskIdSet(currentAssignment.activeTasks);
+        SortedSet<StreamsAssignmentInterface.TaskId> activeTasksToRevoke = new TreeSet<>(ownedActiveTasks);
+        activeTasksToRevoke.removeAll(assignedActiveTasks);
 
         log.info("Assigned tasks with local epoch {}\n" +
                 "\tMember:                        {}\n" +
-                "\tActive tasks:                  {}\n",
+                "\tAssigned active tasks:         {}\n" +
+                "\tOwned active tasks:            {}\n" +
+                "\tActive tasks to revoke:        {}\n",
             targetAssignment.localEpoch,
             memberIdInfoForLog(),
-            assignedActiveTasks
+            assignedActiveTasks,
+            ownedActiveTasks,
+            activeTasksToRevoke
         );
 
-        SortedSet<TopicPartition> ownedTopicPartitions = new TreeSet<>(TOPIC_PARTITION_COMPARATOR);
-        ownedTopicPartitions.addAll(subscriptionState.assignedPartitions());
+        SortedSet<TopicPartition> ownedTopicPartitionsFromSubscriptionState = new TreeSet<>(TOPIC_PARTITION_COMPARATOR);
+        ownedTopicPartitionsFromSubscriptionState.addAll(subscriptionState.assignedPartitions());
+        SortedSet<TopicPartition> ownedTopicPartitionsFromAssignedTasks =
+            topicPartitionsForActiveTasks(currentAssignment.activeTasks);
+        if (!ownedTopicPartitionsFromAssignedTasks.equals(ownedTopicPartitionsFromSubscriptionState)) {
+            throw new IllegalStateException("Owned partitions from subscription state and owned partitions from " +
+                "assigned active tasks are not equal. " +
+                "Owned partitions from subscription state: " + ownedTopicPartitionsFromSubscriptionState + ", " +
+                "Owned partitions from assigned active tasks: " + ownedTopicPartitionsFromAssignedTasks);
+        }
         SortedSet<TopicPartition> assignedTopicPartitions = topicPartitionsForActiveTasks(targetAssignment.activeTasks);
         SortedSet<TopicPartition> assignedTopicPartitionsNotPreviouslyOwned =
-            assignedTopicPartitionsNotPreviouslyOwned(assignedTopicPartitions, ownedTopicPartitions);
+            partitionsToAssignNotPreviouslyOwned(assignedTopicPartitions, ownedTopicPartitionsFromSubscriptionState);
+        SortedSet<TopicPartition> partitionsToRevoke = new TreeSet<>(ownedTopicPartitionsFromSubscriptionState);
+        partitionsToRevoke.removeAll(assignedTopicPartitions);
 
-        subscriptionState.assignFromSubscribedAwaitingCallback(
-            assignedTopicPartitions,
-            assignedTopicPartitionsNotPreviouslyOwned
-        );
+        final CompletableFuture<Void> onTasksRevokedCallbackExecuted = revokeActiveTasks(activeTasksToRevoke);
 
-        final StreamsOnAssignmentCallbackNeededEvent onAssignmentCallbackNeededEvent =
-            new StreamsOnAssignmentCallbackNeededEvent(new StreamsAssignmentInterface.Assignment(
-                assignedActiveTasks,
-                Collections.emptySet(),
-                Collections.emptySet()
-            ));
-        CompletableFuture<Void> onTasksAssignmentDone = onAssignmentCallbackNeededEvent.future();
-        backgroundEventHandler.add(onAssignmentCallbackNeededEvent);
+        final CompletableFuture<Void> onTasksRevokedAndAssignedCallbacksExecuted = onTasksRevokedCallbackExecuted.thenCompose(__ -> {
+            if (!maybeAbortReconciliation()) {
+                return assignActiveTasks(assignedActiveTasks, ownedActiveTasks);
+            }
+            return CompletableFuture.completedFuture(null);
+        });
+
         // The current target assignment is captured to ensure that acknowledging the current assignment is done with
         // the same target assignment that was used when this reconciliation was initiated.
         LocalAssignment currentTargetAssignment = targetAssignment;
-        onTasksAssignmentDone.whenComplete((__, callbackError) -> {
+        onTasksRevokedAndAssignedCallbacksExecuted.whenComplete((__, callbackError) -> {
             if (callbackError != null) {
-                log.error("Reconciliation failed: onTasksAssignment callback invocation failed for tasks {}",
-                    targetAssignment, callbackError);
+                log.error("Reconciliation failed: callback invocation failed for tasks {}",
+                    currentTargetAssignment, callbackError);
                 markReconciliationCompleted();
             } else {
                 if (reconciliationInProgress && !maybeAbortReconciliation()) {
@@ -756,8 +775,61 @@ public class StreamsMembershipManager implements RequestManager {
         });
     }
 
-    private SortedSet<TopicPartition> assignedTopicPartitionsNotPreviouslyOwned(final SortedSet<TopicPartition> assignedTopicPartitions,
-                                                                                final SortedSet<TopicPartition> ownedTopicPartitions) {
+    private CompletableFuture<Void> revokeActiveTasks(final SortedSet<StreamsAssignmentInterface.TaskId> activeTasksToRevoke) {
+        if (activeTasksToRevoke.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        log.info("Revoking previously assigned active tasks {}", activeTasksToRevoke.stream()
+            .map(StreamsAssignmentInterface.TaskId::toString)
+            .collect(Collectors.joining(", ")));
+
+        final SortedSet<TopicPartition> partitionsToRevoke = topicPartitionsForActiveTasks(activeTasksToRevoke);
+        log.debug("Marking partitions pending for revocation: {}", partitionsToRevoke);
+        subscriptionState.markPendingRevocation(partitionsToRevoke);
+
+        return streamsAssignmentInterface.requestOnTasksRevokedCallbackInvocation(activeTasksToRevoke);
+    }
+
+    private CompletableFuture<Void> assignActiveTasks(final SortedSet<StreamsAssignmentInterface.TaskId> activeTasksToAssign,
+                                                      final SortedSet<StreamsAssignmentInterface.TaskId> ownedActiveTasks) {
+        log.info("Assigning active tasks {}", activeTasksToAssign.stream()
+            .map(StreamsAssignmentInterface.TaskId::toString)
+            .collect(Collectors.joining(", ")));
+
+        final SortedSet<TopicPartition> partitionsToAssign = topicPartitionsForActiveTasks(activeTasksToAssign);
+        final SortedSet<TopicPartition> partitionsToAssigneNotPreviouslyOwned =
+            partitionsToAssignNotPreviouslyOwned(partitionsToAssign, topicPartitionsForActiveTasks(ownedActiveTasks));
+
+        subscriptionState.assignFromSubscribedAwaitingCallback(
+            partitionsToAssign,
+            partitionsToAssigneNotPreviouslyOwned
+        );
+
+        return streamsAssignmentInterface.requestOnTasksAssignedCallbackInvocation(
+            new StreamsAssignmentInterface.Assignment(
+                activeTasksToAssign,
+                Collections.emptySet(),
+                Collections.emptySet()
+            )
+        );
+    }
+
+    private CompletableFuture<Void> releaseLostActiveTasks() {
+        final SortedSet<StreamsAssignmentInterface.TaskId> activeTasksToRelease = toTaskIdSet(currentAssignment.activeTasks);
+        log.info("Revoking previously assigned and now lost active tasks {}", activeTasksToRelease.stream()
+            .map(StreamsAssignmentInterface.TaskId::toString)
+            .collect(Collectors.joining(", ")));
+
+        final SortedSet<TopicPartition> partitionsToRelease = topicPartitionsForActiveTasks(activeTasksToRelease);
+        log.debug("Marking lost partitions pending for revocation: {}", partitionsToRelease);
+        subscriptionState.markPendingRevocation(partitionsToRelease);
+
+        return streamsAssignmentInterface.requestOnAllTasksLostCallbackInvocation();
+    }
+
+    private SortedSet<TopicPartition> partitionsToAssignNotPreviouslyOwned(final SortedSet<TopicPartition> assignedTopicPartitions,
+                                                                           final SortedSet<TopicPartition> ownedTopicPartitions) {
         SortedSet<TopicPartition> assignedPartitionsNotPreviouslyOwned = new TreeSet<>(TOPIC_PARTITION_COMPARATOR);
         assignedPartitionsNotPreviouslyOwned.addAll(assignedTopicPartitions);
         assignedPartitionsNotPreviouslyOwned.removeAll(ownedTopicPartitions);
@@ -774,6 +846,19 @@ public class StreamsMembershipManager implements RequestManager {
                 for (final int partitionId : partitionIds) {
                     topicPartitions.add(new TopicPartition(topic, partitionId));
                 }
+            })
+        );
+        return topicPartitions;
+    }
+
+    private SortedSet<TopicPartition> topicPartitionsForActiveTasks(final SortedSet<StreamsAssignmentInterface.TaskId> activeTasks) {
+        final SortedSet<TopicPartition> topicPartitions = new TreeSet<>(TOPIC_PARTITION_COMPARATOR);
+        activeTasks.forEach(task ->
+            Stream.concat(
+                streamsAssignmentInterface.subtopologyMap().get(task.subtopologyId()).sourceTopics.stream(),
+                streamsAssignmentInterface.subtopologyMap().get(task.subtopologyId()).repartitionSourceTopics.keySet().stream()
+            ).forEach(topic -> {
+                topicPartitions.add(new TopicPartition(topic, task.partitionId()));
             })
         );
         return topicPartitions;
@@ -801,28 +886,47 @@ public class StreamsMembershipManager implements RequestManager {
         rejoinedWhileReconciliationInProgress = false;
     }
 
-    private CompletableFuture<Void> invokeRevokingAllTasksCallback() {
-        final StreamsOnAssignmentCallbackNeededEvent onAssignmentCallbackNeededEvent =
-            new StreamsOnAssignmentCallbackNeededEvent(new StreamsAssignmentInterface.Assignment(
-                Collections.emptySet(),
-                Collections.emptySet(),
-                Collections.emptySet()
-            ));
-        backgroundEventHandler.add(onAssignmentCallbackNeededEvent);
-        return onAssignmentCallbackNeededEvent.future();
-    }
-
-    public void onTaskAssignmentCallbackCompleted(StreamsOnAssignmentCallbackCompletedEvent event) {
+    public void onTasksRevokedCallbackCompleted(final StreamsOnTasksRevokedCallbackCompletedEvent event) {
         Optional<KafkaException> error = event.error();
         CompletableFuture<Void> future = event.future();
 
         if (error.isPresent()) {
             Exception e = error.get();
-            log.warn("The onTaskAssignment callback completed with an error ({}); " +
+            log.warn("The onTasksRevoked callback completed with an error ({}); " +
                 "signaling to continue to the next phase of rebalance", e.getMessage());
             future.completeExceptionally(e);
         } else {
-            log.debug("The onTaskAssignment callback completed successfully; signaling to continue to the next phase of rebalance");
+            log.debug("The onTasksRevoked callback completed successfully; signaling to continue to the next phase of rebalance");
+            future.complete(null);
+        }
+    }
+
+    public void onTasksAssignedCallbackCompleted(final StreamsOnTasksAssignedCallbackCompletedEvent event) {
+        Optional<KafkaException> error = event.error();
+        CompletableFuture<Void> future = event.future();
+
+        if (error.isPresent()) {
+            Exception e = error.get();
+            log.warn("The onTasksAssigned callback completed with an error ({}); " +
+                "signaling to continue to the next phase of rebalance", e.getMessage());
+            future.completeExceptionally(e);
+        } else {
+            log.debug("The onTasksAssigned callback completed successfully; signaling to continue to the next phase of rebalance");
+            future.complete(null);
+        }
+    }
+
+    public void onAllTasksLostCallbackCompleted(final StreamsOnAllTasksLostCallbackCompletedEvent event) {
+        Optional<KafkaException> error = event.error();
+        CompletableFuture<Void> future = event.future();
+
+        if (error.isPresent()) {
+            Exception e = error.get();
+            log.warn("The onAllTasksLost callback completed with an error ({}); " +
+                "signaling to continue to the next phase of rebalance", e.getMessage());
+            future.completeExceptionally(e);
+        } else {
+            log.debug("The onAllTasksLost callback completed successfully; signaling to continue to the next phase of rebalance");
             future.complete(null);
         }
     }

@@ -822,7 +822,7 @@ public class GroupCoordinatorShard implements CoordinatorShard<CoordinatorRecord
      * @param record        The record to apply to the state machine.
      * @throws RuntimeException
      */
-    @SuppressWarnings("CyclomaticComplexity")
+    @SuppressWarnings({"CyclomaticComplexity", "MethodLength"})
     @Override
     public void replay(
         long offset,
@@ -944,47 +944,54 @@ public class GroupCoordinatorShard implements CoordinatorShard<CoordinatorRecord
 
             case 16:
                 groupMetadataManager.replay(
+                    (ConsumerGroupRegularExpressionKey) key.message(),
+                    (ConsumerGroupRegularExpressionValue) Utils.messageOrNull(value)
+                );
+                break;
+
+            case 17:
+                groupMetadataManager.replay(
                     (StreamsGroupMetadataKey) key.message(),
                     (StreamsGroupMetadataValue) messageOrNull(value)
                 );
                 break;
 
-            case 17:
+            case 18:
                 groupMetadataManager.replay(
                     (StreamsGroupPartitionMetadataKey) key.message(),
                     (StreamsGroupPartitionMetadataValue) messageOrNull(value)
                 );
                 break;
 
-            case 18:
+            case 19:
                 groupMetadataManager.replay(
                     (StreamsGroupMemberMetadataKey) key.message(),
                     (StreamsGroupMemberMetadataValue) messageOrNull(value)
                 );
                 break;
 
-            case 19:
+            case 20:
                 groupMetadataManager.replay(
                     (StreamsGroupTargetAssignmentMetadataKey) key.message(),
                     (StreamsGroupTargetAssignmentMetadataValue) messageOrNull(value)
                 );
                 break;
 
-            case 20:
+            case 21:
                 groupMetadataManager.replay(
                     (StreamsGroupTargetAssignmentMemberKey) key.message(),
                     (StreamsGroupTargetAssignmentMemberValue) messageOrNull(value)
                 );
                 break;
 
-            case 21:
+            case 22:
                 groupMetadataManager.replay(
                     (StreamsGroupCurrentMemberAssignmentKey) key.message(),
                     (StreamsGroupCurrentMemberAssignmentValue) messageOrNull(value)
                 );
                 break;
 
-            case 22:
+            case 23:
                 groupMetadataManager.replay(
                     (StreamsGroupTopologyKey) key.message(),
                     (StreamsGroupTopologyValue) messageOrNull(value)

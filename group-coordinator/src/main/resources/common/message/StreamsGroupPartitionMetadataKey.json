@@ -17,10 +17,10 @@
 {
   "type": "data",
   "name": "StreamsGroupPartitionMetadataKey",
-  "validVersions": "56",
+  "validVersions": "18",
   "flexibleVersions": "none",
   "fields": [
-    { "name": "GroupId", "type": "string", "versions": "56",
+    { "name": "GroupId", "type": "string", "versions": "18",
       "about": "The group id." }
   ]
 }

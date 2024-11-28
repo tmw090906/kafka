@@ -16,26 +16,15 @@
  */
 package org.apache.kafka.clients.consumer.internals.events;
 
-import org.apache.kafka.clients.consumer.internals.StreamsAssignmentInterface;
+public class StreamsOnAllTasksLostCallbackNeededEvent extends CompletableBackgroundEvent<Void> {
 
-import java.util.Objects;
-
-public class StreamsOnAssignmentCallbackNeededEvent extends CompletableBackgroundEvent<Void> {
-
-    private final StreamsAssignmentInterface.Assignment assignment;
-
-    public StreamsOnAssignmentCallbackNeededEvent(StreamsAssignmentInterface.Assignment assignment) {
-        super(Type.STREAMS_ON_ASSIGNMENT_CALLBACK_NEEDED, Long.MAX_VALUE);
-        this.assignment = Objects.requireNonNull(assignment);
-    }
-
-    public StreamsAssignmentInterface.Assignment assignment() {
-        return assignment;
+    public StreamsOnAllTasksLostCallbackNeededEvent() {
+        super(Type.STREAMS_ON_ALL_TASKS_LOST_CALLBACK_NEEDED, Long.MAX_VALUE);
     }
 
     @Override
     protected String toStringBase() {
-        return super.toStringBase() +
-            ", assignment=" + assignment;
+        return super.toStringBase();
     }
 }
+

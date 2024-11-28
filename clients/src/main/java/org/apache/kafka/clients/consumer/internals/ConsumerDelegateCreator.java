@@ -92,8 +92,7 @@ public class ConsumerDelegateCreator {
                     valueDeserializer,
                     client,
                     subscriptions,
-                    metadata,
-                    Optional.empty()
+                    metadata
                 );
             else
                 return new ClassicKafkaConsumer<>(

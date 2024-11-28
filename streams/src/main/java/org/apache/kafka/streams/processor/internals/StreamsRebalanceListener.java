@@ -52,8 +52,6 @@ public class StreamsRebalanceListener implements ConsumerRebalanceListener {
     @Override
     public void onPartitionsAssigned(final Collection<TopicPartition> partitions) {
 
-        streamThread.maybeHandleAssignmentFromStreamsRebalanceProtocol();
-
         // NB: all task management is already handled by:
         // org.apache.kafka.streams.processor.internals.StreamsPartitionAssignor.onAssignment
         if (assignmentErrorCode.get() == AssignorError.INCOMPLETE_SOURCE_TOPIC_METADATA.code()) {

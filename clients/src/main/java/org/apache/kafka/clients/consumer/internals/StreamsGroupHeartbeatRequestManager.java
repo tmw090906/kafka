@@ -23,11 +23,8 @@ import org.apache.kafka.clients.consumer.internals.events.BackgroundEventHandler
 import org.apache.kafka.clients.consumer.internals.events.ErrorEvent;
 import org.apache.kafka.clients.consumer.internals.metrics.HeartbeatMetricsManager;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.errors.GroupAuthorizationException;
 import org.apache.kafka.common.errors.RetriableException;
-import org.apache.kafka.common.message.ConsumerGroupHeartbeatResponseData;
-import org.apache.kafka.common.message.ConsumerGroupHeartbeatResponseData.TopicPartitions;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData.CopartitionGroup;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData.TaskIds;
@@ -35,7 +32,6 @@ import org.apache.kafka.common.message.StreamsGroupHeartbeatResponseData;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatResponseData.Endpoint;
 import org.apache.kafka.common.metrics.Metrics;
 import org.apache.kafka.common.protocol.Errors;
-import org.apache.kafka.common.requests.ConsumerGroupHeartbeatResponse;
 import org.apache.kafka.common.requests.StreamsGroupHeartbeatRequest;
 import org.apache.kafka.common.requests.StreamsGroupHeartbeatResponse;
 import org.apache.kafka.common.utils.LogContext;
@@ -51,11 +47,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class StreamsGroupHeartbeatRequestManager implements RequestManager {
 
@@ -69,7 +63,7 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
 
     private final StreamsGroupHeartbeatRequestManager.HeartbeatState heartbeatState;
 
-    private final ConsumerMembershipManager membershipManager;
+    private final StreamsMembershipManager membershipManager;
 
     private final BackgroundEventHandler backgroundEventHandler;
 
@@ -79,20 +73,15 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
 
     private StreamsAssignmentInterface streamsInterface;
 
-    private final Map<String, Uuid> assignedTopicIdCache;
-
-    private final ConsumerMetadata metadata;
-
     public StreamsGroupHeartbeatRequestManager(
         final LogContext logContext,
         final Time time,
         final ConsumerConfig config,
         final CoordinatorRequestManager coordinatorRequestManager,
-        final ConsumerMembershipManager membershipManager,
+        final StreamsMembershipManager membershipManager,
         final BackgroundEventHandler backgroundEventHandler,
         final Metrics metrics,
-        final StreamsAssignmentInterface streamsAssignmentInterface,
-        final ConsumerMetadata metadata
+        final StreamsAssignmentInterface streamsAssignmentInterface
     ) {
         this.coordinatorRequestManager = coordinatorRequestManager;
         this.logger = logContext.logger(getClass());
@@ -108,14 +97,12 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
         this.pollTimer = time.timer(maxPollIntervalMs);
         this.metricsManager = new HeartbeatMetricsManager(metrics);
         this.streamsInterface = streamsAssignmentInterface;
-        this.assignedTopicIdCache = new HashMap<>();
-        this.metadata = metadata;
     }
 
     @Override
     public NetworkClientDelegate.PollResult poll(long currentTimeMs) {
         if (!coordinatorRequestManager.coordinator().isPresent() || membershipManager.shouldSkipHeartbeat()) {
-            membershipManager.onHeartbeatRequestSkipped();
+            membershipManager.transitionToUnsubscribeIfLeaving();
             return NetworkClientDelegate.PollResult.EMPTY;
         }
         pollTimer.update(currentTimeMs);
@@ -126,7 +113,7 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
                 "messages. You can address this either by increasing max.poll.interval.ms or by " +
                 "reducing the maximum size of batches returned in poll() with max.poll.records.");
 
-            membershipManager.transitionToSendingLeaveGroup(true);
+            membershipManager.onPollTimerExpired();
             NetworkClientDelegate.UnsentRequest leaveHeartbeat = makeHeartbeatRequest(currentTimeMs, true);
 
             // We can ignore the leave response because we can join before or after receiving the response.
@@ -145,7 +132,7 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
         return new NetworkClientDelegate.PollResult(heartbeatRequestState.heartbeatIntervalMs, Collections.singletonList(request));
     }
 
-    public ConsumerMembershipManager membershipManager() {
+    public StreamsMembershipManager membershipManager() {
         return membershipManager;
     }
 
@@ -252,14 +239,6 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
             streamsInterface.partitionsByHost.set(convertHostInfoMap(data));
         }
 
-        ConsumerGroupHeartbeatResponseData cgData = new ConsumerGroupHeartbeatResponseData();
-        cgData.setMemberId(data.memberId());
-        cgData.setMemberEpoch(data.memberEpoch());
-        cgData.setErrorCode(data.errorCode());
-        cgData.setErrorMessage(data.errorMessage());
-        cgData.setThrottleTimeMs(data.throttleTimeMs());
-        cgData.setHeartbeatIntervalMs(data.heartbeatIntervalMs());
-
         List<StreamsGroupHeartbeatResponseData.Status> statuses = data.status();
 
         if (statuses != null && !statuses.isEmpty()) {
@@ -269,54 +248,7 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
             logger.warn("Membership is in the following statuses: {}.", statusDetails);
         }
 
-        if (data.activeTasks() != null && data.standbyTasks() != null && data.warmupTasks() != null) {
-
-            setTargetAssignment(data);
-            setTargetAssignmentForConsumerGroup(data, cgData);
-
-        } else {
-            if (data.activeTasks() != null || data.standbyTasks() != null || data.warmupTasks() != null) {
-                throw new IllegalStateException("Invalid response data, task collections must be all null or all non-null: " + data);
-            }
-        }
-
-        membershipManager.onHeartbeatSuccess(new ConsumerGroupHeartbeatResponse(cgData));
-    }
-
-    private void setTargetAssignmentForConsumerGroup(final StreamsGroupHeartbeatResponseData data,
-                                                     final ConsumerGroupHeartbeatResponseData cgData) {
-        Map<String, TopicPartitions> tps = new HashMap<>();
-        data.activeTasks().forEach(taskId -> Stream.concat(
-                streamsInterface.subtopologyMap().get(taskId.subtopologyId()).sourceTopics.stream(),
-                streamsInterface.subtopologyMap().get(taskId.subtopologyId()).repartitionSourceTopics.keySet().stream()
-            )
-            .forEach(topic -> {
-                final TopicPartitions toInsert = tps.computeIfAbsent(topic, k -> {
-                    final Optional<Uuid> uuid = findTopicIdInGlobalOrLocalCache(topic);
-                    if (uuid.isPresent()) {
-                        TopicPartitions t =
-                            new TopicPartitions();
-                        t.setTopicId(uuid.get());
-                        return t;
-                    } else {
-                        return null;
-                    }
-                });
-                if (toInsert != null) {
-                    toInsert.partitions().addAll(taskId.partitions());
-                }
-            }));
-        ConsumerGroupHeartbeatResponseData.Assignment cgAssignment = new ConsumerGroupHeartbeatResponseData.Assignment();
-        cgAssignment.setTopicPartitions(new ArrayList<>(tps.values()));
-        cgData.setAssignment(cgAssignment);
-    }
-
-    private void setTargetAssignment(final StreamsGroupHeartbeatResponseData data) {
-        Assignment targetAssignment = new Assignment();
-        updateTaskIdCollection(data.activeTasks(), targetAssignment.activeTasks);
-        updateTaskIdCollection(data.standbyTasks(), targetAssignment.standbyTasks);
-        updateTaskIdCollection(data.warmupTasks(), targetAssignment.warmupTasks);
-        streamsInterface.targetAssignment.set(targetAssignment);
+        membershipManager.onHeartbeatSuccess(response);
     }
 
     private static Map<StreamsAssignmentInterface.HostInfo, List<TopicPartition>> convertHostInfoMap(
@@ -410,7 +342,7 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
                 message = String.format("StreamsGroupHeartbeatRequest failed for member %s because epoch %s is fenced.",
                     membershipManager.memberId(), membershipManager.memberEpoch());
                 logInfo(message, response, currentTimeMs);
-                membershipManager.transitionToFenced();
+                membershipManager.onFenced();
                 // Skip backoff so that a next HB to rejoin is sent as soon as the fenced member releases its assignment
                 heartbeatRequestState.reset();
                 break;
@@ -419,7 +351,7 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
                 message = String.format("StreamsGroupHeartbeatRequest failed because member %s is unknown.",
                     membershipManager.memberId());
                 logInfo(message, response, currentTimeMs);
-                membershipManager.transitionToFenced();
+                membershipManager.onFenced();
                 // Skip backoff so that a next HB to rejoin is sent as soon as the fenced member releases its assignment
                 heartbeatRequestState.reset();
                 break;
@@ -507,22 +439,9 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
         }
     }
 
-    private Optional<Uuid> findTopicIdInGlobalOrLocalCache(String topicName) {
-        Uuid idFromMetadataCache = metadata.topicIds().getOrDefault(topicName, null);
-        if (idFromMetadataCache != null) {
-            // Add topic name to local cache, so it can be reused if included in a next target
-            // assignment if metadata cache not available.
-            assignedTopicIdCache.put(topicName, idFromMetadataCache);
-            return Optional.of(idFromMetadataCache);
-        } else {
-            Uuid idFromLocalCache = assignedTopicIdCache.getOrDefault(topicName, null);
-            return Optional.ofNullable(idFromLocalCache);
-        }
-    }
-
     static class HeartbeatState {
 
-        private final ConsumerMembershipManager membershipManager;
+        private final StreamsMembershipManager membershipManager;
         private final int rebalanceTimeoutMs;
         private final StreamsGroupHeartbeatRequestManager.HeartbeatState.SentFields sentFields;
 
@@ -533,7 +452,7 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
 
         public HeartbeatState(
             final StreamsAssignmentInterface streamsInterface,
-            final ConsumerMembershipManager membershipManager,
+            final StreamsMembershipManager membershipManager,
             final int rebalanceTimeoutMs) {
 
             this.membershipManager = membershipManager;
