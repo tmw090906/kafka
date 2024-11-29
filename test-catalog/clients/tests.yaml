@@ -618,6 +618,7 @@ org.apache.kafka.clients.consumer.ConsumerConfigTest:
 - testProtocolConfigValidation
 - testRemoteAssignorConfig
 - testRemoteAssignorWithClassicGroupProtocol
+- testUnsupportedConfigsWithConsumerGroupProtocol
 org.apache.kafka.clients.consumer.ConsumerGroupMetadataTest:
 - testAssignmentConstructor
 - testGroupIdConstructor
@@ -1056,7 +1057,6 @@ org.apache.kafka.clients.consumer.internals.AsyncKafkaConsumerTest:
 - testOffsetsForTimesOnNullPartitions
 - testOffsetsForTimesTimeoutException
 - testOffsetsForTimesWithZeroTimeout
-- testPartitionAssignmentStrategyUnusedInAsyncConsumer
 - testPollThrowsInterruptExceptionIfInterrupted
 - testProcessBackgroundEventsTimesOut
 - testProcessBackgroundEventsWithInitialDelay
