@@ -16,11 +16,13 @@
  */
 package org.apache.kafka.coordinator.group.streams;
 
-import org.apache.kafka.coordinator.group.generated.StreamsGroupTopologyValue.Subtopology;
+import org.apache.kafka.coordinator.group.streams.topics.ConfiguredSubtopology;
+import org.apache.kafka.coordinator.group.streams.topics.ConfiguredTopology;
 import org.apache.kafka.coordinator.group.taskassignor.TopologyDescriber;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * The topology metadata class is used by the {@link org.apache.kafka.coordinator.group.taskassignor.TaskAssignor} to obtain topic and
@@ -34,11 +36,11 @@ public class TopologyMetadata implements TopologyDescriber {
      */
     private final Map<String, org.apache.kafka.coordinator.group.streams.TopicMetadata> topicMetadata;
 
-    private final StreamsTopology topology;
+    private final ConfiguredTopology topology;
 
     public TopologyMetadata(
         Map<String, org.apache.kafka.coordinator.group.streams.TopicMetadata> topicMetadata,
-        StreamsTopology topology
+        ConfiguredTopology topology
     ) {
         this.topicMetadata = Objects.requireNonNull(topicMetadata);
         this.topology = Objects.requireNonNull(topology);
@@ -53,14 +55,13 @@ public class TopologyMetadata implements TopologyDescriber {
         return this.topicMetadata;
     }
 
-    public StreamsTopology topology() {
+    public ConfiguredTopology topology() {
         return topology;
     }
 
     @Override
     public boolean isStateful(String subtopologyId) {
-        //TODO
-        return false;
+        return !topology.subtopologies().get(subtopologyId).stateChangelogTopics().isEmpty();
     }
 
     /**
@@ -71,17 +72,14 @@ public class TopologyMetadata implements TopologyDescriber {
      */
     @Override
     public int numPartitions(String subtopologyId) {
-        final Subtopology subtopology = topology.subtopologies().get(subtopologyId);
+        final ConfiguredSubtopology subtopology = topology.subtopologies().get(subtopologyId);
         if (subtopology == null) {
             return -1;
         }
-        // TODO: We need to validate the validity of the subtopology here or somewhere else
-        final String firstSourceTopic = subtopology.sourceTopics().get(0);
-        if (firstSourceTopic == null) {
-            return -1;
-        }
-        org.apache.kafka.coordinator.group.streams.TopicMetadata topic = this.topicMetadata.get(firstSourceTopic);
-        return topic == null ? -1 : topic.numPartitions();
+        return Stream.concat(
+            subtopology.sourceTopics().stream(),
+            subtopology.repartitionSourceTopics().keySet().stream()
+        ).map(topic -> this.topicMetadata.get(topic).numPartitions()).max(Integer::compareTo).orElse(-1);
     }
 
     @Override

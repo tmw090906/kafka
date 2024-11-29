@@ -23,14 +23,13 @@ import org.apache.kafka.common.message.CreateTopicsRequestData.CreatableTopicCon
 import org.apache.kafka.common.utils.LogContext;
 import org.apache.kafka.coordinator.group.generated.StreamsGroupTopologyValue;
 import org.apache.kafka.coordinator.group.generated.StreamsGroupTopologyValue.Subtopology;
+import org.apache.kafka.coordinator.group.streams.StreamsTopology;
 import org.apache.kafka.coordinator.group.streams.TopicMetadata;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -42,23 +41,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class InternalTopicManagerTest {
 
     @Test
-    void testMissingTopics() {
+    void testConfigureTopics() {
         Map<String, TopicMetadata> topicMetadata = new HashMap<>();
         topicMetadata.put("source_topic1", new TopicMetadata(Uuid.randomUuid(), "source_topic1", 2, Collections.emptyMap()));
         topicMetadata.put("source_topic2", new TopicMetadata(Uuid.randomUuid(), "source_topic2", 2, Collections.emptyMap()));
         topicMetadata.put("state_changelog_topic2",
             new TopicMetadata(Uuid.randomUuid(), "state_changelog_topic2", 2, Collections.emptyMap()));
-        Map<String, ConfiguredSubtopology> subtopologyMap = makeExpectedConfiguredTopology();
+        StreamsTopology topology = makeTestTopology();
 
-        Map<String, CreatableTopic> missingTopics = InternalTopicManager.missingTopics(subtopologyMap, topicMetadata);
+        ConfiguredTopology configuredTopology = InternalTopicManager.configureTopics(new LogContext(), topology, topicMetadata);
+        final Map<String, CreatableTopic> internalTopicsToBeCreated = configuredTopology.internalTopicsToBeCreated();
 
-        assertEquals(2, missingTopics.size());
+        assertEquals(2, internalTopicsToBeCreated.size());
         assertEquals(
             new CreatableTopic()
                 .setName("repartition_topic")
                 .setNumPartitions(2)
                 .setReplicationFactor((short) 3),
-            missingTopics.get("repartition_topic")
+            internalTopicsToBeCreated.get("repartition_topic")
         );
         assertEquals(
             new CreatableTopic()
@@ -69,24 +69,13 @@ class InternalTopicManagerTest {
                     new CreatableTopicConfigCollection(
                         Collections.singletonList(new CreatableTopicConfig().setName("cleanup.policy").setValue("compact")).iterator())
                 ),
-            missingTopics.get("state_changelog_topic1"));
+            internalTopicsToBeCreated.get("state_changelog_topic1"));
+
+        Map<String, ConfiguredSubtopology> expectedConfiguredTopology = makeExpectedConfiguredSubtopologies();
+        assertEquals(expectedConfiguredTopology, configuredTopology.subtopologies());
     }
 
-    @Test
-    void testConfigureTopics() {
-        Map<String, TopicMetadata> topicMetadata = new HashMap<>();
-        topicMetadata.put("source_topic1", new TopicMetadata(Uuid.randomUuid(), "source_topic1", 2, Collections.emptyMap()));
-        topicMetadata.put("source_topic2", new TopicMetadata(Uuid.randomUuid(), "source_topic2", 2, Collections.emptyMap()));
-        List<Subtopology> subtopologyList = makeTestTopology();
-
-        Map<String, ConfiguredSubtopology> configuredSubtopologies =
-            InternalTopicManager.configureTopics(new LogContext(), subtopologyList, topicMetadata);
-
-        Map<String, ConfiguredSubtopology> expectedConfiguredSubtopologyMap = makeExpectedConfiguredTopology();
-        assertEquals(expectedConfiguredSubtopologyMap, configuredSubtopologies);
-    }
-
-    private static Map<String, ConfiguredSubtopology> makeExpectedConfiguredTopology() {
+    private static Map<String, ConfiguredSubtopology> makeExpectedConfiguredSubtopologies() {
         return mkMap(
             mkEntry("subtopology1",
                 new ConfiguredSubtopology()
@@ -119,7 +108,7 @@ class InternalTopicManagerTest {
         );
     }
 
-    private static List<Subtopology> makeTestTopology() {
+    private static StreamsTopology makeTestTopology() {
         // Create a subtopology source -> repartition
         Subtopology subtopology1 = new Subtopology()
             .setSubtopologyId("subtopology1")
@@ -152,7 +141,8 @@ class InternalTopicManagerTest {
                     .setSourceTopics(Collections.singletonList((short) 0))
                     .setRepartitionSourceTopics(Collections.singletonList((short) 0))
             ));
-        return Arrays.asList(subtopology1, subtopology2);
+
+        return new StreamsTopology(3, Map.of("subtopology1", subtopology1, "subtopology2", subtopology2));
     }
 
 }

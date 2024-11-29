@@ -17,6 +17,7 @@
 package org.apache.kafka.coordinator.group.streams;
 
 import org.apache.kafka.coordinator.common.runtime.CoordinatorRecord;
+import org.apache.kafka.coordinator.group.streams.topics.ConfiguredTopology;
 import org.apache.kafka.coordinator.group.taskassignor.AssignmentMemberSpec;
 import org.apache.kafka.coordinator.group.taskassignor.GroupAssignment;
 import org.apache.kafka.coordinator.group.taskassignor.GroupSpecImpl;
@@ -117,7 +118,7 @@ public class TargetAssignmentBuilder {
     /**
      * The topology.
      */
-    private StreamsTopology topology;
+    private ConfiguredTopology topology;
 
     /**
      * The members which have been updated or deleted. Deleted members are signaled by a null value.
@@ -205,7 +206,7 @@ public class TargetAssignmentBuilder {
      * @return This object.
      */
     public TargetAssignmentBuilder withTopology(
-        StreamsTopology topology
+        ConfiguredTopology topology
     ) {
         this.topology = topology;
         return this;
@@ -280,7 +281,7 @@ public class TargetAssignmentBuilder {
 
         // Compute the assignment.
         GroupAssignment newGroupAssignment;
-        if (topology != null) {
+        if (topology.isReady()) {
             newGroupAssignment = assignor.assign(
                 new GroupSpecImpl(
                     Collections.unmodifiableMap(memberSpecs),

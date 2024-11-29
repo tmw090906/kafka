@@ -53,7 +53,7 @@ public class StreamsGroupMember {
         private int rebalanceTimeoutMs = -1;
         private String clientId = "";
         private String clientHost = "";
-        private String topologyId;
+        private int topologyEpoch = -1;
         private String processId;
         private StreamsGroupMemberMetadataValue.Endpoint userEndpoint;
         private Map<String, String> clientTags = Collections.emptyMap();
@@ -79,7 +79,7 @@ public class StreamsGroupMember {
             this.rebalanceTimeoutMs = member.rebalanceTimeoutMs;
             this.clientId = member.clientId;
             this.clientHost = member.clientHost;
-            this.topologyId = member.topologyId;
+            this.topologyEpoch = member.topologyEpoch;
             this.processId = member.processId;
             this.userEndpoint = member.userEndpoint;
             this.clientTags = member.clientTags;
@@ -154,13 +154,13 @@ public class StreamsGroupMember {
             return this;
         }
 
-        public Builder setTopologyId(String topologyId) {
-            this.topologyId = topologyId;
+        public Builder setTopologyEpoch(int topologyEpoch) {
+            this.topologyEpoch = topologyEpoch;
             return this;
         }
 
-        public Builder maybeUpdateTopologyId(Optional<String> topologyId) {
-            this.topologyId = topologyId.orElse(this.topologyId);
+        public Builder maybeUpdateTopologyEpoch(OptionalInt topologyEpoch) {
+            this.topologyEpoch = topologyEpoch.orElse(this.topologyEpoch);
             return this;
         }
 
@@ -247,7 +247,7 @@ public class StreamsGroupMember {
             setClientId(record.clientId());
             setClientHost(record.clientHost());
             setRebalanceTimeoutMs(record.rebalanceTimeoutMs());
-            setTopologyId(record.topologyId());
+            setTopologyEpoch(record.topologyEpoch());
             setProcessId(record.processId());
             setUserEndpoint(record.userEndpoint());
             setClientTags(record.clientTags().stream().collect(Collectors.toMap(
@@ -291,7 +291,7 @@ public class StreamsGroupMember {
                 rebalanceTimeoutMs,
                 clientId,
                 clientHost,
-                topologyId,
+                topologyEpoch,
                 processId,
                 userEndpoint,
                 clientTags,
@@ -352,9 +352,9 @@ public class StreamsGroupMember {
     private final String clientHost;
 
     /**
-     * The topology ID
+     * The topology epoch
      */
-    private final String topologyId;
+    private final int topologyEpoch;
 
     /**
      * The process ID
@@ -411,7 +411,7 @@ public class StreamsGroupMember {
         int rebalanceTimeoutMs,
         String clientId,
         String clientHost,
-        String topologyId,
+        int topologyEpoch,
         String processId,
         StreamsGroupMemberMetadataValue.Endpoint userEndpoint,
         Map<String, String> clientTags,
@@ -432,7 +432,7 @@ public class StreamsGroupMember {
         this.rebalanceTimeoutMs = rebalanceTimeoutMs;
         this.clientId = clientId;
         this.clientHost = clientHost;
-        this.topologyId = topologyId;
+        this.topologyEpoch = topologyEpoch;
         this.processId = processId;
         this.userEndpoint = userEndpoint;
         this.clientTags = clientTags;
@@ -501,10 +501,10 @@ public class StreamsGroupMember {
     }
 
     /**
-     * @return The topology ID
+     * @return The topology epoch
      */
-    public String topologyId() {
-        return topologyId;
+    public int topologyEpoch() {
+        return topologyEpoch;
     }
 
     /**
@@ -621,7 +621,7 @@ public class StreamsGroupMember {
                     .setValue(entry.getValue())
             ).collect(Collectors.toList()))
             .setProcessId(processId)
-            .setTopologyId(topologyId);
+            .setTopologyEpoch(topologyEpoch);
         // TODO: TaskOffset and TaskEndOffset are missing.
 
     }
@@ -657,7 +657,7 @@ public class StreamsGroupMember {
             && Objects.equals(rackId, that.rackId)
             && Objects.equals(clientId, that.clientId)
             && Objects.equals(clientHost, that.clientHost)
-            && Objects.equals(topologyId, that.topologyId)
+            && Objects.equals(topologyEpoch, that.topologyEpoch)
             && Objects.equals(processId, that.processId)
             && Objects.equals(userEndpoint, that.userEndpoint)
             && Objects.equals(clientTags, that.clientTags)
@@ -681,7 +681,7 @@ public class StreamsGroupMember {
             rebalanceTimeoutMs,
             clientId,
             clientHost,
-            topologyId,
+            topologyEpoch,
             processId,
             userEndpoint,
             clientTags,
@@ -706,7 +706,7 @@ public class StreamsGroupMember {
             ", rebalanceTimeoutMs=" + rebalanceTimeoutMs +
             ", clientId='" + clientId + '\'' +
             ", clientHost='" + clientHost + '\'' +
-            ", topologyId='" + topologyId + '\'' +
+            ", topologyEpoch='" + topologyEpoch + '\'' +
             ", processId='" + processId + '\'' +
             ", userEndpoint=" + userEndpoint +
             ", clientTags=" + clientTags +

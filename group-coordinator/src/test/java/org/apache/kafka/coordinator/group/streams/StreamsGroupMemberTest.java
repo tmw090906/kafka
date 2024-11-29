@@ -55,7 +55,7 @@ public class StreamsGroupMemberTest {
             .setRebalanceTimeoutMs(5000)
             .setClientId("client-id")
             .setClientHost("hostname")
-            .setTopologyId("topology-hash")
+            .setTopologyEpoch(3)
             .setProcessId("process-id")
             .setUserEndpoint(new StreamsGroupMemberMetadataValue.Endpoint().setHost("host").setPort(9090))
             .setClientTags(mkMap(mkEntry("client", "tag")))
@@ -73,7 +73,7 @@ public class StreamsGroupMemberTest {
         assertEquals("rack-id", member.rackId());
         assertEquals("client-id", member.clientId());
         assertEquals("hostname", member.clientHost());
-        assertEquals("topology-hash", member.topologyId());
+        assertEquals(3, member.topologyEpoch());
         assertEquals("process-id", member.processId());
         assertEquals(new StreamsGroupMemberMetadataValue.Endpoint().setHost("host").setPort(9090), member.userEndpoint());
         assertEquals(
@@ -111,7 +111,7 @@ public class StreamsGroupMemberTest {
             .setRebalanceTimeoutMs(5000)
             .setClientId("client-id")
             .setClientHost("hostname")
-            .setTopologyId("topology-hash")
+            .setTopologyEpoch(3)
             .setProcessId("process-id")
             .setUserEndpoint(new StreamsGroupMemberMetadataValue.Endpoint().setHost("host").setPort(9090))
             .setClientTags(mkMap(mkEntry("client", "tag")))
@@ -130,7 +130,7 @@ public class StreamsGroupMemberTest {
             .setRebalanceTimeoutMs(5000)
             .setClientId("client-id")
             .setClientHost("hostname")
-            .setTopologyId("topology-hash")
+            .setTopologyEpoch(3)
             .setProcessId("process-id")
             .setUserEndpoint(new StreamsGroupMemberMetadataValue.Endpoint().setHost("host").setPort(9090))
             .setClientTags(mkMap(mkEntry("client", "tag")))
@@ -149,7 +149,7 @@ public class StreamsGroupMemberTest {
             .setRebalanceTimeoutMs(5000)
             .setClientId("client-id")
             .setClientHost("hostname")
-            .setTopologyId("topology-hash")
+            .setTopologyEpoch(3)
             .setProcessId("process-id")
             .setUserEndpoint(new StreamsGroupMemberMetadataValue.Endpoint().setHost("host").setPort(9090))
             .setClientTags(mkMap(mkEntry("client", "tag")))
@@ -177,7 +177,7 @@ public class StreamsGroupMemberTest {
             .setRebalanceTimeoutMs(5000)
             .setClientId("client-id")
             .setClientHost("hostname")
-            .setTopologyId("topology-hash")
+            .setTopologyEpoch(3)
             .setProcessId("process-id")
             .setUserEndpoint(new StreamsGroupMemberMetadataValue.Endpoint().setHost("host").setPort(9090))
             .setClientTags(mkMap(mkEntry("client", "tag")))
@@ -216,7 +216,7 @@ public class StreamsGroupMemberTest {
             .setInstanceId("instance-id")
             .setRackId("rack-id")
             .setRebalanceTimeoutMs(1000)
-            .setTopologyId("topology-hash")
+            .setTopologyEpoch(3)
             .setProcessId("process-id")
             .setUserEndpoint(new StreamsGroupMemberMetadataValue.Endpoint().setHost("host").setPort(9090))
             .setClientTags(Collections.singletonList(new KeyValue().setKey("client").setValue("tag")));
@@ -230,7 +230,7 @@ public class StreamsGroupMemberTest {
         assertEquals("client-id", member.clientId());
         assertEquals("host-id", member.clientHost());
         assertEquals(1000, member.rebalanceTimeoutMs());
-        assertEquals("topology-hash", member.topologyId());
+        assertEquals(3, member.topologyEpoch());
         assertEquals("process-id", member.processId());
         assertEquals(new StreamsGroupMemberMetadataValue.Endpoint().setHost("host").setPort(9090), member.userEndpoint());
         assertEquals(
@@ -315,7 +315,7 @@ public class StreamsGroupMemberTest {
         String rackId = "rackId";
         String clientHost = "clientHost";
         String processId = "processId";
-        String topologyId = "topologyId";
+        int topologyEpoch = 3;
         Map<String, String> clientTags = Collections.singletonMap("key", "value");
         org.apache.kafka.coordinator.group.streams.Assignment targetAssignment = new org.apache.kafka.coordinator.group.streams.Assignment(
             mkMap(mkEntry(subTopology1, new HashSet<>(assignedTasks3))),
@@ -329,7 +329,7 @@ public class StreamsGroupMemberTest {
             .setRackId(rackId)
             .setClientHost(clientHost)
             .setProcessId(processId)
-            .setTopologyId(topologyId)
+            .setTopologyEpoch(topologyEpoch)
             .setClientTags(clientTags)
             .setAssignedActiveTasks(
                 mkMap(mkEntry(subTopology1, new HashSet<>(assignedTasks1)))
@@ -351,7 +351,7 @@ public class StreamsGroupMemberTest {
             .setRackId(rackId)
             .setClientHost(clientHost)
             .setProcessId(processId)
-            .setTopologyId(topologyId)
+            .setTopologyEpoch(topologyEpoch)
             .setClientTags(Collections.singletonList(new StreamsGroupDescribeResponseData.KeyValue().setKey("key").setValue("value")))
             .setAssignment(
                 new StreamsGroupDescribeResponseData.Assignment()

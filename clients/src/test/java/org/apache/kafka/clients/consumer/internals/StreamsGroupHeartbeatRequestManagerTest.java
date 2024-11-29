@@ -182,7 +182,6 @@ class StreamsGroupHeartbeatRequestManagerTest {
         assertEquals(TEST_MEMBER_ID, request.data().memberId());
         assertEquals(TEST_MEMBER_EPOCH, request.data().memberEpoch());
         assertEquals(TEST_INSTANCE_ID, request.data().instanceId());
-        assertEquals(streamsAssignmentInterface.topologyId(), request.data().topologyId());
 
         // Static information is null
         assertNull(request.data().processId());
@@ -198,13 +197,13 @@ class StreamsGroupHeartbeatRequestManagerTest {
         final Set<String> sourceTopics = Set.of("sourceTopic1", "sourceTopic2");
         final Set<String> repartitionSinkTopics = Set.of("repartitionSinkTopic1", "repartitionSinkTopic2", "repartitionSinkTopic3");
         final Map<String, StreamsAssignmentInterface.TopicInfo> repartitionSourceTopics = mkMap(
-            mkEntry("repartitionTopic1", new StreamsAssignmentInterface.TopicInfo(Optional.of(2), Optional.of((short) 1), Collections.emptyMap())),
+            mkEntry("repartitionTopic1", new StreamsAssignmentInterface.TopicInfo(Optional.of(2), Optional.of((short) 1), Map.of("config1", "value1"))),
             mkEntry("repartitionTopic2", new StreamsAssignmentInterface.TopicInfo(Optional.of(3), Optional.of((short) 3), Collections.emptyMap()))
         );
         final Map<String, StreamsAssignmentInterface.TopicInfo> changelogTopics = mkMap(
             mkEntry("changelogTopic1", new StreamsAssignmentInterface.TopicInfo(Optional.empty(), Optional.of((short) 1), Collections.emptyMap())),
             mkEntry("changelogTopic2", new StreamsAssignmentInterface.TopicInfo(Optional.empty(), Optional.of((short) 2), Collections.emptyMap())),
-            mkEntry("changelogTopic3", new StreamsAssignmentInterface.TopicInfo(Optional.empty(), Optional.of((short) 3), Collections.emptyMap()))
+            mkEntry("changelogTopic3", new StreamsAssignmentInterface.TopicInfo(Optional.empty(), Optional.of((short) 3), Map.of("config2", "value2")))
         );
         final Collection<Set<String>> copartitionGroup = Set.of(
             Set.of("sourceTopic1", "repartitionTopic2"),
@@ -235,9 +234,9 @@ class StreamsGroupHeartbeatRequestManagerTest {
         assertEquals(1, request.data().clientTags().size());
         assertEquals("clientTag1", request.data().clientTags().get(0).key());
         assertEquals("value2", request.data().clientTags().get(0).value());
-        assertEquals(streamsAssignmentInterface.topologyId(), request.data().topologyId());
+        assertEquals(streamsAssignmentInterface.topologyEpoch(), request.data().topology().epoch());
         assertNotNull(request.data().topology());
-        final List<StreamsGroupHeartbeatRequestData.Subtopology> subtopologies = request.data().topology();
+        final List<StreamsGroupHeartbeatRequestData.Subtopology> subtopologies = request.data().topology().subtopologies();
         assertEquals(1, subtopologies.size());
         final StreamsGroupHeartbeatRequestData.Subtopology subtopology = subtopologies.get(0);
         assertEquals(subtopologyName1, subtopology.subtopologyId());
@@ -248,6 +247,7 @@ class StreamsGroupHeartbeatRequestManagerTest {
             final StreamsAssignmentInterface.TopicInfo repartitionTopic = repartitionSourceTopics.get(topicInfo.name());
             assertEquals(repartitionTopic.numPartitions.get(), topicInfo.partitions());
             assertEquals(repartitionTopic.replicationFactor.get(), topicInfo.replicationFactor());
+            assertEquals(repartitionTopic.topicConfigs.size(), topicInfo.topicConfigs().size());
         });
         assertEquals(changelogTopics.size(), subtopology.stateChangelogTopics().size());
         subtopology.stateChangelogTopics().forEach(topicInfo -> {
@@ -255,6 +255,7 @@ class StreamsGroupHeartbeatRequestManagerTest {
             assertEquals(0, topicInfo.partitions());
             final StreamsAssignmentInterface.TopicInfo changelogTopic = changelogTopics.get(topicInfo.name());
             assertEquals(changelogTopic.replicationFactor.get(), topicInfo.replicationFactor());
+            assertEquals(changelogTopic.topicConfigs.size(), topicInfo.topicConfigs().size());
         });
         assertEquals(2, subtopology.copartitionGroups().size());
         final StreamsGroupHeartbeatRequestData.CopartitionGroup expectedCopartitionGroupData1 =

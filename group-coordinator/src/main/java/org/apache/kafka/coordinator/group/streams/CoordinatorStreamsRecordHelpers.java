@@ -67,7 +67,7 @@ public class CoordinatorStreamsRecordHelpers {
                     .setClientId(member.clientId())
                     .setClientHost(member.clientHost())
                     .setRebalanceTimeoutMs(member.rebalanceTimeoutMs())
-                    .setTopologyId(member.topologyId())
+                    .setTopologyEpoch(member.topologyEpoch())
                     .setProcessId(member.processId())
                     .setUserEndpoint(member.userEndpoint())
                     .setClientTags(member.clientTags().entrySet().stream().map(e ->
@@ -376,12 +376,12 @@ public class CoordinatorStreamsRecordHelpers {
      * Creates a StreamsTopology record.
      *
      * @param groupId       The consumer group id.
-     * @param subtopologies The subtopologies in the new topology.
+     * @param topology      The new topology.
      * @return The record.
      */
     public static CoordinatorRecord newStreamsGroupTopologyRecord(String groupId,
-                                                                  List<StreamsGroupHeartbeatRequestData.Subtopology> subtopologies) {
-        return newStreamsGroupTopologyRecord(groupId, convertToStreamsGroupTopologyRecord(subtopologies));
+                                                                  StreamsGroupHeartbeatRequestData.Topology topology) {
+        return newStreamsGroupTopologyRecord(groupId, convertToStreamsGroupTopologyRecord(topology));
     }
 
     /**
@@ -403,12 +403,13 @@ public class CoordinatorStreamsRecordHelpers {
     /**
      * Encodes subtopologies from the Heartbeat RPC to a StreamsTopology record value.
      *
-     * @param subtopologies The subtopologies in the new topology.
+     * @param topology The new topology
      * @return The record value.
      */
-    public static StreamsGroupTopologyValue convertToStreamsGroupTopologyRecord(List<StreamsGroupHeartbeatRequestData.Subtopology> subtopologies) {
+    public static StreamsGroupTopologyValue convertToStreamsGroupTopologyRecord(StreamsGroupHeartbeatRequestData.Topology topology) {
         StreamsGroupTopologyValue value = new StreamsGroupTopologyValue();
-        subtopologies.forEach(subtopology -> {
+        value.setEpoch(topology.epoch());
+        topology.subtopologies().forEach(subtopology -> {
             List<StreamsGroupTopologyValue.TopicInfo> repartitionSourceTopics =
                 subtopology.repartitionSourceTopics().stream()
                     .map(CoordinatorStreamsRecordHelpers::convertToTopicInfo)
@@ -428,7 +429,7 @@ public class CoordinatorStreamsRecordHelpers {
                     )
                     .collect(Collectors.toList());
 
-            value.topology().add(
+            value.subtopologies().add(
                 new StreamsGroupTopologyValue.Subtopology()
                     .setSubtopologyId(subtopology.subtopologyId())
                     .setSourceTopics(subtopology.sourceTopics())

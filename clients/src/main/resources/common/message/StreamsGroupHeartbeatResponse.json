@@ -30,13 +30,12 @@
   // - FENCED_MEMBER_EPOCH (version 0+)
   // - UNRELEASED_INSTANCE_ID (version 0+)
   // - GROUP_MAX_SIZE_REACHED (version 0+)
-  // - TOPIC_AUTHORIZATION_FAILED (version 0+)
+  // - TOPIC_AUTHORIZATION_FAILED (version 0+) 
   // - CLUSTER_AUTHORIZATION_FAILED (version 0+)
   // - STREAMS_INVALID_TOPOLOGY (version 0+)
-  // - STREAMS_MISSING_SOURCE_TOPICS (version 0+)
-  // - STREAMS_INCONSISTENT_INTERNAL_TOPICS (version 0+)
+  // - STREAMS_INVALID_TOPOLOGY_EPOCH (version 0+)
+  // - STREAMS_TOPOLOGY_FENCED (version 0+)
   "fields": [
-    // Same as consumer group heart beat
     { "name": "ThrottleTimeMs", "type": "int32", "versions": "0+",
       "about": "The duration in milliseconds for which the request was throttled due to a quota violation, or zero if the request did not violate any quota." },
     { "name": "ErrorCode", "type": "int16", "versions": "0+",
@@ -53,11 +52,6 @@
       "about": "The maximal lag a warm-up task can have to be considered caught-up." },
     { "name": "TaskOffsetIntervalMs", "type": "int32", "versions": "0+",
       "about": "The interval in which the task changelog offsets on a client are updated on the broker. The offsets are sent with the next heartbeat after this time has passed." },
-
-    // Topology updating
-    { "name": "GroupTopologyId", "type": "string", "versions": "0+", "nullableVersions": "0+", "default": null,
-      "about": "The current ID of the topology for the group. Null if unchanged since last heartbeat." },
-
 
     { "name": "Status", "type":  "[]Status", "versions":  "0+",  "nullableVersions": "0+", "default": "null",
       "about": "Indicate zero or more status for the group.  Null if unchanged since last heartbeat." },
@@ -84,11 +78,18 @@
   "commonStructs": [
     { "name": "Status", "versions": "0+", "fields": [
       // Possible status codes
-      //  0 - UNITIALIZED_TOPOLOGY    - The group is not initialized.
-      //  1 - INCONSISTENT_TOPOLOGY   - The topology ID supplied is inconsistent with the topology for this streams group.
-      //  2 - MISSING_SOURCE_TOPICS   - One or more source topics do not exist. Missing topics are indicated in the StatusDetail.
-      //  3 - MISSING_INTERNAL_TOPICS - One or more internal topics do not exist. Missing topics are indicated in the StatusDetail.
-      //  4 - SHUTDOWN_APPLICATION    - A client requested the shutdown of the whole application.
+      //  0 - STALE_TOPOLOGY                 - The topology epoch supplied is lower than the topology epoch for this streams group.
+      //  1 - MISSING_SOURCE_TOPICS          - One or more source topics are missing or a source topic regex resolves to zero topics.
+      //                                       Missing topics are indicated in the StatusDetail.
+      //  2 - INCORRECTLY_PARTITIONED_TOPICS - One or more topics are incorrectly partitioned, that is, they are not copartitioned despite being
+      //                                       part of a copartition group, or the number of partitions in a changelog topic does not correspond
+      //                                       to the maximal number of source topic partition for that subtopology.
+      //                                       Incorrectly partitioned topics are indicated in the StatusDetail.
+      //  3 - MISSING_INTERNAL_TOPICS        - One or more internal topics are missing.
+      //                                       Missing topics are indicated in the StatusDetail.
+      //                                       The group coordinator will attempt to create all missing internal topics, if any errors occur during
+      //                                       topic creation, this will be indicated in StatusDetail.
+      //  4 - SHUTDOWN_APPLICATION           - A client requested the shutdown of the whole application.
       { "name": "StatusCode", "type": "int8", "versions": "0+",
         "about": "A code to indicate that a particular status is active for the group membership" },
       { "name": "StatusDetail", "type": "string", "versions": "0+",

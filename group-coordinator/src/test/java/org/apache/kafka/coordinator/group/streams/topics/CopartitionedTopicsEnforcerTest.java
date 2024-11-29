@@ -16,8 +16,8 @@
  */
 package org.apache.kafka.coordinator.group.streams.topics;
 
-import org.apache.kafka.common.errors.StreamsInconsistentInternalTopicsException;
 import org.apache.kafka.common.errors.StreamsInvalidTopologyException;
+import org.apache.kafka.common.requests.StreamsGroupHeartbeatResponse.Status;
 import org.apache.kafka.common.utils.LogContext;
 import org.apache.kafka.common.utils.Utils;
 
@@ -60,7 +60,7 @@ public class CopartitionedTopicsEnforcerTest {
     }
 
     @Test
-    public void shouldThrowStreamsInconsistentInternalTopicsExceptionIfNoPartitionsFoundForCoPartitionedTopic() {
+    public void shouldThrowTopicConfigurationExceptionIfNoPartitionsFoundForCoPartitionedTopic() {
         final CopartitionedTopicsEnforcer validator = new CopartitionedTopicsEnforcer(LOG_CONTEXT,
             CopartitionedTopicsEnforcerTest::emptyTopicPartitionProvider);
         assertThrows(StreamsInvalidTopologyException.class, () -> validator.enforce(Collections.singleton("topic"),
@@ -68,11 +68,12 @@ public class CopartitionedTopicsEnforcerTest {
     }
 
     @Test
-    public void shouldThrowStreamsInconsistentInternalTopicsExceptionIfPartitionCountsForCoPartitionedTopicsDontMatch() {
+    public void shouldThrowTopicConfigurationExceptionIfPartitionCountsForCoPartitionedTopicsDontMatch() {
         final CopartitionedTopicsEnforcer validator = new CopartitionedTopicsEnforcer(LOG_CONTEXT,
             CopartitionedTopicsEnforcerTest::firstSecondTopicInconsistent);
-        assertThrows(StreamsInconsistentInternalTopicsException.class, () -> validator.enforce(Set.of("first", "second"),
+        TopicConfigurationException ex = assertThrows(TopicConfigurationException.class, () -> validator.enforce(Set.of("first", "second"),
             Collections.emptyMap()));
+        assertEquals(Status.INCORRECTLY_PARTITIONED_TOPICS, ex.status());
     }
 
 
@@ -122,8 +123,8 @@ public class CopartitionedTopicsEnforcerTest {
         final ConfiguredInternalTopic topic1 = createConfiguredInternalTopicWithEnforcedNumberOfPartitions("repartitioned-1", 10);
         final ConfiguredInternalTopic topic2 = createConfiguredInternalTopicWithEnforcedNumberOfPartitions("repartitioned-2", 5);
 
-        final StreamsInconsistentInternalTopicsException ex = assertThrows(
-            StreamsInconsistentInternalTopicsException.class,
+        final TopicConfigurationException ex = assertThrows(
+            TopicConfigurationException.class,
             () -> validator.enforce(Set.of(topic1.name(), topic2.name()),
                 Utils.mkMap(
                     Utils.mkEntry(topic1.name(), topic1),
@@ -137,6 +138,7 @@ public class CopartitionedTopicsEnforcerTest {
                 Utils.mkEntry(topic2.name(), topic2.numberOfPartitions().get()))
         );
 
+        assertEquals(Status.INCORRECTLY_PARTITIONED_TOPICS, ex.status());
         assertEquals(String.format(
             "Following topics do not have the same number of partitions: " +
                 "[%s]", sorted), ex.getMessage());
@@ -166,12 +168,13 @@ public class CopartitionedTopicsEnforcerTest {
             CopartitionedTopicsEnforcerTest::firstSecondTopicConsistent);
         final ConfiguredInternalTopic topic1 = createConfiguredInternalTopicWithEnforcedNumberOfPartitions("repartitioned-1", 10);
 
-        final StreamsInconsistentInternalTopicsException ex = assertThrows(
-            StreamsInconsistentInternalTopicsException.class,
+        final TopicConfigurationException ex = assertThrows(
+            TopicConfigurationException.class,
             () -> validator.enforce(Set.of(topic1.name(), "second"),
                 Utils.mkMap(Utils.mkEntry(topic1.name(), topic1)))
         );
 
+        assertEquals(Status.INCORRECTLY_PARTITIONED_TOPICS, ex.status());
         assertEquals(String.format("Number of partitions [%s] " +
                 "of repartition topic [%s] " +
                 "doesn't match number of partitions [%s] of the source topic.",

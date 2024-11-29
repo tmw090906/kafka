@@ -45,21 +45,27 @@
           "about": "The group epoch." },
         { "name": "AssignmentEpoch", "type": "int32", "versions": "0+",
           "about": "The assignment epoch." },
-        { "name":  "Topology", "type": "[]Subtopology", "versions": "0+", "nullableVersions": "0+", "default": "null",
-          "about": "The resolved sub-topologies of the streams application. This contains the configured sub-topologies, where the number of partitions are set and any regular expressions are resolved to actual topics. Null if the group is uninitialized, source topics are missing or inconsistent.",
+
+        { "name":  "Topology", "type": "Topology", "versions": "0+", "nullableVersions": "0+", "default": "null",
+          "about": "The topology metadata currently initialized for the streams application. Can be null in case of a describe error.",
           "fields": [
-            { "name": "SubtopologyId", "type": "string", "versions": "0+",
-              "about": "String to uniquely identify the subtopology. Deterministically generated from the topology." },
-            { "name": "SourceTopics", "type": "[]string", "versions": "0+",
-              "about": "The topics the topology reads from." },
-            { "name": "RepartitionSinkTopics", "type": "[]string", "versions": "0+",
-              "about": "The repartition topics the topology writes to." },
-            { "name": "StateChangelogTopics", "type": "[]TopicInfo", "versions": "0+",
-              "about": "The set of state changelog topics associated with this subtopology. Created automatically." },
-            { "name": "RepartitionSourceTopics", "type": "[]TopicInfo", "versions": "0+",
-              "about": "The set of source topics that are internally created repartition topics." }
-          ]
-        },
+            { "name": "Epoch", "type": "int32", "versions": "0+",
+              "about": "The epoch of the currently initialized topology for this group." },
+            { "name": "Subtopologies", "type": "[]Subtopology", "versions": "0+", "nullableVersions": "0+", "default": "null",
+              "about": "The subtopologies of the streams application. This contains the configured subtopologies, where the number of partitions are set and any regular expressions are resolved to actual topics. Null if the group is uninitialized, source topics are missing or inconsistent.",
+              "fields": [
+                { "name": "SubtopologyId", "type": "string", "versions": "0+",
+                  "about": "String to uniquely identify the subtopology." },
+                { "name": "SourceTopics", "type": "[]string", "versions": "0+",
+                  "about": "The topics the subtopology reads from." },
+                { "name": "RepartitionSinkTopics", "type": "[]string", "versions": "0+",
+                  "about": "The repartition topics the subtopology writes to." },
+                { "name": "StateChangelogTopics", "type": "[]TopicInfo", "versions": "0+",
+                  "about": "The set of state changelog topics associated with this subtopology. Created automatically." },
+                { "name": "RepartitionSourceTopics", "type": "[]TopicInfo", "versions": "0+",
+                  "about": "The set of source topics that are internally created repartition topics. Created automatically." }
+              ]}
+          ]},
         { "name": "Members", "type": "[]Member", "versions": "0+",
           "about": "The members.",
           "fields": [
@@ -68,7 +74,7 @@
             { "name": "MemberEpoch", "type": "int32", "versions": "0+",
               "about": "The member epoch." },
             { "name": "InstanceId", "type": "string", "versions": "0+", "nullableVersions": "0+", "default": "null",
-              "about": "The member instance ID." },
+              "about": "The member instance ID for static membership." },
             { "name": "RackId", "type": "string", "versions": "0+", "nullableVersions": "0+", "default": "null",
               "about": "The rack ID." },
 
@@ -77,17 +83,17 @@
             { "name": "ClientHost", "type": "string", "versions": "0+",
               "about": "The client host." },
 
-            { "name": "TopologyId", "type": "string", "versions": "0+",
-              "about": "The ID of the topology. Must be non-empty." },
+            { "name": "TopologyEpoch", "type": "int32", "versions": "0+",
+              "about": "The epoch of the topology on the client." },
 
             { "name": "ProcessId", "type": "string", "versions": "0+",
               "about": "Identity of the streams instance that may have multiple clients. " },
             { "name": "ClientTags", "type": "[]KeyValue", "versions": "0+",
               "about": "Used for rack-aware assignment algorithm." },
             { "name": "TaskOffsets", "type": "[]TaskOffset", "versions": "0+",
-              "about": "Cumulative offsets for tasks." },
+              "about": "Cumulative changelog offsets for tasks." },
             { "name": "TaskEndOffsets", "type": "[]TaskOffset", "versions": "0+",
-              "about": "Cumulative end offsets for tasks." },
+              "about": "Cumulative changelog end offsets for tasks." },
 
             { "name": "Assignment", "type": "Assignment", "versions": "0+",
               "about": "The current assignment." },

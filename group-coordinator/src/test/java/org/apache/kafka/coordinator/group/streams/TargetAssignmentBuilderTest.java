@@ -19,14 +19,14 @@ package org.apache.kafka.coordinator.group.streams;
 import org.apache.kafka.common.Uuid;
 import org.apache.kafka.coordinator.group.MetadataImageBuilder;
 import org.apache.kafka.coordinator.group.generated.StreamsGroupMemberMetadataValue;
-import org.apache.kafka.coordinator.group.generated.StreamsGroupTopologyValue;
+import org.apache.kafka.coordinator.group.streams.topics.ConfiguredSubtopology;
+import org.apache.kafka.coordinator.group.streams.topics.ConfiguredTopology;
 import org.apache.kafka.coordinator.group.taskassignor.AssignmentMemberSpec;
 import org.apache.kafka.coordinator.group.taskassignor.GroupAssignment;
 import org.apache.kafka.coordinator.group.taskassignor.GroupSpecImpl;
 import org.apache.kafka.coordinator.group.taskassignor.MemberAssignment;
 import org.apache.kafka.coordinator.group.taskassignor.TaskAssignor;
 import org.apache.kafka.image.TopicsImage;
-
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -61,7 +61,7 @@ public class TargetAssignmentBuilderTest {
         private final String groupId;
         private final int groupEpoch;
         private final TaskAssignor assignor = mock(TaskAssignor.class);
-        private final StreamsTopology topology = new StreamsTopology("", new HashMap<>());
+        private final ConfiguredTopology topology = new ConfiguredTopology(0, new HashMap<>(), new HashMap<>(), Optional.empty());
         private final Map<String, StreamsGroupMember> members = new HashMap<>();
         private final Map<String, org.apache.kafka.coordinator.group.streams.TopicMetadata> subscriptionMetadata = new HashMap<>();
         private final Map<String, StreamsGroupMember> updatedMembers = new HashMap<>();
@@ -117,9 +117,8 @@ public class TargetAssignmentBuilderTest {
                 partitionRacks
             ));
             topicsImageBuilder = topicsImageBuilder.addTopic(topicId, topicName, numTasks);
-            topology.subtopologies().put(subtopologyId, new StreamsGroupTopologyValue.Subtopology()
-                .setSubtopologyId(subtopologyId)
-                .setSourceTopics(Collections.singletonList(topicId.toString())));
+            topology.subtopologies().put(subtopologyId, new ConfiguredSubtopology()
+                .setSourceTopics(Collections.singleton(topicId.toString())));
 
             return subtopologyId;
         }
@@ -208,9 +207,6 @@ public class TargetAssignmentBuilderTest {
 
             // Prepare the expected subscription topic metadata.
             TopologyMetadata topologyMetadata = new TopologyMetadata(subscriptionMetadata, topology);
-
-            // Prepare the member assignments per topic partition.
-            Map<String, Map<Integer, String>> invertedTargetAssignment = TaskAssignmentTestUtil.invertedTargetAssignment(memberSpecs);
 
             // Prepare the expected assignment spec.
             GroupSpecImpl groupSpec = new GroupSpecImpl(memberSpecs, new ArrayList<>(topology.subtopologies().keySet()), new HashMap<>());

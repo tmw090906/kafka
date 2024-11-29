@@ -22,7 +22,6 @@ import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.errors.ApiException;
 import org.apache.kafka.common.errors.StaleMemberEpochException;
 import org.apache.kafka.common.errors.UnknownMemberIdException;
-import org.apache.kafka.common.message.CreateTopicsRequestData.CreatableTopic;
 import org.apache.kafka.common.message.ListGroupsResponseData;
 import org.apache.kafka.common.message.StreamsGroupDescribeResponseData;
 import org.apache.kafka.common.protocol.Errors;
@@ -32,8 +31,8 @@ import org.apache.kafka.coordinator.group.Group;
 import org.apache.kafka.coordinator.group.OffsetExpirationCondition;
 import org.apache.kafka.coordinator.group.OffsetExpirationConditionImpl;
 import org.apache.kafka.coordinator.group.metrics.GroupCoordinatorMetricsShard;
-import org.apache.kafka.coordinator.group.streams.topics.ConfiguredSubtopology;
 import org.apache.kafka.coordinator.group.streams.topics.InternalTopicManager;
+import org.apache.kafka.coordinator.group.streams.topics.ConfiguredTopology;
 import org.apache.kafka.image.ClusterImage;
 import org.apache.kafka.image.TopicImage;
 import org.apache.kafka.image.TopicsImage;
@@ -184,7 +183,7 @@ public class StreamsGroup implements Group {
     /**
      * The configured topology including resolved regular expressions.
      */
-    private final TimelineObject<Optional<StreamsConfiguredTopology>> configuredTopology;
+    private final TimelineObject<Optional<ConfiguredTopology>> configuredTopology;
 
     /**
      * The metadata refresh deadline. It consists of a timestamp in milliseconds together with the group epoch at the time of setting it.
@@ -257,7 +256,7 @@ public class StreamsGroup implements Group {
             .setGroupType(type().toString());
     }
 
-    public StreamsConfiguredTopology configuredTopology() {
+    public ConfiguredTopology configuredTopology() {
         return configuredTopology.get().orElse(null);
     }
 
@@ -748,24 +747,6 @@ public class StreamsGroup implements Group {
     }
 
     /**
-     * Computes the partition metadata based on the current topology and the current topics/cluster image.
-     *
-     * @param topicsImage          The current metadata for all available topics.
-     * @param clusterImage         The current metadata for the Kafka cluster.
-     * @return An immutable map of partition metadata for each topic that the streams topology is using (besides non-repartition sink topics)
-     */
-    public Map<String, TopicMetadata> computePartitionMetadata(
-        TopicsImage topicsImage,
-        ClusterImage clusterImage
-    ) {
-        Optional<StreamsTopology> topology = this.topology.get();
-        if (topology.isPresent()) {
-            return computePartitionMetadata(topicsImage, clusterImage, topology.get());
-        }
-        return Collections.emptyMap();
-    }
-
-    /**
      * Updates the metadata refresh deadline.
      *
      * @param deadlineMs The deadline in milliseconds.
@@ -968,25 +949,8 @@ public class StreamsGroup implements Group {
         if (topology.get().isPresent()) {
             final StreamsTopology streamsTopology = topology.get().get();
 
-            log.info("[GroupId {}] Attempting to configure the topology {}", groupId, streamsTopology);
-
-            try {
-                final Map<String, ConfiguredSubtopology> configuredTopics =
-                    InternalTopicManager.configureTopics(logContext, streamsTopology.subtopologies().values(), partitionMetadata);
-                final Map<String, CreatableTopic> internalTopicsToBeCreated = InternalTopicManager.missingTopics(
-                    configuredTopics, partitionMetadata);
-                if (internalTopicsToBeCreated.isEmpty()) {
-                    log.info("[GroupId {}] Valid topic configuration found, topology {} is now initialized.", groupId, streamsTopology.topologyId());
-                } else {
-                    log.info("[GroupId {}] Internal topics for topology {} need to be created: {}.", groupId, streamsTopology.topologyId(), internalTopicsToBeCreated.keySet());
-                }
-
-                this.configuredTopology.set(Optional.of(new StreamsConfiguredTopology(streamsTopology.topologyId(), configuredTopics, internalTopicsToBeCreated)));
-            } catch (Exception e) {
-                log.warn("[GroupId {}] Failed to configure internal topics for topology {}.", groupId, streamsTopology.topologyId(), e);
-                this.configuredTopology.set(Optional.empty());
-                // TODO: Set validation error, so it can be propagated to all members.
-            }
+            log.info("[GroupId {}] Configuring the topology {}", groupId, streamsTopology);
+            this.configuredTopology.set(Optional.of(InternalTopicManager.configureTopics(logContext, streamsTopology, partitionMetadata)));
 
         } else {
             configuredTopology.set(Optional.empty());
@@ -1199,7 +1163,7 @@ public class StreamsGroup implements Group {
             .setGroupEpoch(groupEpoch.get(committedOffset))
             .setGroupState(state.get(committedOffset).toString())
             .setAssignmentEpoch(targetAssignmentEpoch.get(committedOffset))
-            .setTopology(configuredTopology.get(committedOffset).map(StreamsConfiguredTopology::asStreamsGroupDescribeTopology).orElse(null));
+            .setTopology(configuredTopology.get(committedOffset).map(ConfiguredTopology::asStreamsGroupDescribeTopology).orElse(null));
         members.entrySet(committedOffset).forEach(
             entry -> describedGroup.members().add(
                 entry.getValue().asStreamsGroupDescribeMember(

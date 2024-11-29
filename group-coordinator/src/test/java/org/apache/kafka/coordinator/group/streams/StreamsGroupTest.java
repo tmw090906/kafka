@@ -439,7 +439,7 @@ public class StreamsGroupTest {
         assertEquals(MemberState.STABLE, member1.state());
         assertEquals(StreamsGroup.StreamsGroupState.NOT_READY, streamsGroup.state());
 
-        streamsGroup.setTopology(new StreamsTopology("topology-id", Collections.emptyMap()));
+        streamsGroup.setTopology(new StreamsTopology(1, Collections.emptyMap()));
 
         assertEquals(MemberState.STABLE, member1.state());
         assertEquals(StreamsGroup.StreamsGroupState.ASSIGNING, streamsGroup.state());
@@ -711,7 +711,7 @@ public class StreamsGroupTest {
             .setPreviousMemberEpoch(0)
             .build();
         streamsGroup.updateMember(member1);
-        streamsGroup.setTopology(new StreamsTopology("topology-id", Collections.emptyMap()));
+        streamsGroup.setTopology(new StreamsTopology(1, Collections.emptyMap()));
 
         assertEquals(StreamsGroup.StreamsGroupState.RECONCILING, streamsGroup.state());
         assertThrows(GroupNotEmptyException.class, streamsGroup::validateDeleteGroup);

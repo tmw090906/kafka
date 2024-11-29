@@ -4059,7 +4059,7 @@ public class RequestResponseTest {
                     .setGroupEpoch(0)
                     .setAssignmentEpoch(0)
                     .setMembers(new ArrayList<>(0))
-                    .setTopology(new ArrayList<>(0))
+                    .setTopology(null)
             ))
             .setThrottleTimeMs(1000);
         return new StreamsGroupDescribeResponse(data);

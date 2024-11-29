@@ -61,6 +61,7 @@ import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData.KeyValue
 import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData.TaskIds;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData.TaskOffset;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatResponseData;
+import org.apache.kafka.common.message.StreamsGroupHeartbeatResponseData.Status;
 import org.apache.kafka.common.message.SyncGroupRequestData;
 import org.apache.kafka.common.message.SyncGroupResponseData;
 import org.apache.kafka.common.protocol.Errors;
@@ -68,6 +69,7 @@ import org.apache.kafka.common.protocol.types.SchemaException;
 import org.apache.kafka.common.requests.JoinGroupRequest;
 import org.apache.kafka.common.requests.RequestContext;
 import org.apache.kafka.common.requests.ShareGroupHeartbeatRequest;
+import org.apache.kafka.common.requests.StreamsGroupHeartbeatResponse;
 import org.apache.kafka.common.utils.LogContext;
 import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.coordinator.common.runtime.CoordinatorExecutor;
@@ -143,6 +145,9 @@ import org.apache.kafka.coordinator.group.streams.StreamsGroup;
 import org.apache.kafka.coordinator.group.streams.StreamsGroupHeartbeatResult;
 import org.apache.kafka.coordinator.group.streams.StreamsGroupMember;
 import org.apache.kafka.coordinator.group.streams.StreamsTopology;
+import org.apache.kafka.coordinator.group.streams.topics.ConfiguredTopology;
+import org.apache.kafka.coordinator.group.streams.topics.InternalTopicManager;
+import org.apache.kafka.coordinator.group.streams.topics.TopicConfigurationException;
 import org.apache.kafka.coordinator.group.taskassignor.TaskAssignor;
 import org.apache.kafka.image.MetadataDelta;
 import org.apache.kafka.image.MetadataImage;
@@ -166,6 +171,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -746,7 +752,7 @@ public class GroupMetadataManager {
 
         return describedGroups;
     }
-    
+
     /**
      * Handles a DescribeGroup request.
      *
@@ -2078,7 +2084,7 @@ public class GroupMetadataManager {
      * @param instanceId         The instance id from the request or null.
      * @param rackId             The rack id from the request or null.
      * @param rebalanceTimeoutMs The rebalance timeout from the request or -1.
-     * @param topologyId         The topology id from the request or null.
+     * @param clientTopology     The topology from the request or null.
      * @param clientId           The client id.
      * @param clientHost         The client host.
      * @param ownedActiveTasks   The list of owned active tasks from the request or null.
@@ -2095,8 +2101,7 @@ public class GroupMetadataManager {
         String instanceId,
         String rackId,
         int rebalanceTimeoutMs,
-        final String topologyId,
-        final List<StreamsGroupHeartbeatRequestData.Subtopology> clientTopology,
+        final StreamsGroupHeartbeatRequestData.Topology clientTopology,
         String clientId,
         String clientHost,
         List<TaskIds> ownedActiveTasks,
@@ -2111,6 +2116,7 @@ public class GroupMetadataManager {
     ) throws ApiException {
         final long currentTimeMs = time.milliseconds();
         final List<CoordinatorRecord> records = new ArrayList<>();
+        final List<StreamsGroupHeartbeatResponseData.Status> returnedStatus = new ArrayList<>();
 
         // Get or create the streams group.
         boolean createIfNotExists = memberEpoch == 0;
@@ -2171,7 +2177,7 @@ public class GroupMetadataManager {
             .maybeUpdateInstanceId(Optional.ofNullable(instanceId))
             .maybeUpdateRackId(Optional.ofNullable(rackId))
             .maybeUpdateRebalanceTimeoutMs(ofSentinel(rebalanceTimeoutMs))
-            .maybeUpdateTopologyId(Optional.ofNullable(topologyId))
+            .maybeUpdateTopologyEpoch(clientTopology != null ? OptionalInt.of(clientTopology.epoch()) : OptionalInt.empty())
             .setClientId(clientId)
             .setClientHost(clientHost)
             .maybeUpdateProcessId(Optional.ofNullable(processId))
@@ -2180,6 +2186,7 @@ public class GroupMetadataManager {
             .build();
 
         int groupEpoch = group.groupEpoch();
+        StreamsTopology topology = group.topology();
         Map<String, org.apache.kafka.coordinator.group.streams.TopicMetadata> partitionMetadata = group.partitionMetadata();
 
         boolean bumpGroupEpoch = hasStreamsMemberMetadataChanged(
@@ -2189,32 +2196,49 @@ public class GroupMetadataManager {
             records
         );
 
-        // 2. Initialize/Update the group topology.
-        // TODO: Topology updates will come later
-        if (clientTopology != null && group.topology() == null) {
+        if (group.topology() != null && updatedMember.topologyEpoch() < group.topology().topologyEpoch()) {
+            returnedStatus.add(
+                new Status()
+                    .setStatusCode(StreamsGroupHeartbeatResponse.Status.STALE_TOPOLOGY.code())
+                    .setStatusDetail(
+                        String.format(
+                            "The member's topology epoch %d is behind the group's topology epoch %d.",
+                            updatedMember.topologyEpoch(),
+                            group.topology().topologyEpoch()
+                        )
+                    )
+            );
+        }
 
-            log.info("[GroupId {}] Member {} initialized the topology {}", groupId, memberId, topologyId);
+        // 2. Initialize/Update the group topology.
+        if (clientTopology != null) {
 
             StreamsGroupTopologyValue recordValue = convertToStreamsGroupTopologyRecord(clientTopology);
 
-            records.add(newStreamsGroupTopologyRecord(groupId, recordValue));
-
-            final Map<String, StreamsGroupTopologyValue.Subtopology> subtopologyMap = recordValue.topology().stream()
+            final Map<String, StreamsGroupTopologyValue.Subtopology> subtopologyMap = recordValue.subtopologies().stream()
                 .collect(Collectors.toMap(StreamsGroupTopologyValue.Subtopology::subtopologyId, x -> x));
-            final StreamsTopology topology = new StreamsTopology(topologyId, subtopologyMap);
 
-            group.setTopology(topology);
+            topology = new StreamsTopology(clientTopology.epoch(), subtopologyMap);
 
-            bumpGroupEpoch = true;
+            if (group.topology() == null) {
+                log.info("[GroupId {}] Member {} initialized the topology with epoch {}", groupId, memberId, clientTopology.epoch());
+
+                records.add(newStreamsGroupTopologyRecord(groupId, recordValue));
+
+                bumpGroupEpoch = true;
+            } else if (!topology.equals(group.topology())) {
+                throw new InvalidRequestException("Topology updates are not supported yet.");
+            }
         }
 
         // 3. Configure the partition metadata and create internal topics if needed.
-        if (bumpGroupEpoch || group.hasMetadataExpired(currentTimeMs) || group.configuredTopology() == null || !group.configuredTopology().isReady()) {
+        if (bumpGroupEpoch || group.hasMetadataExpired(currentTimeMs)) {
 
             // The partition metadata is updated when the refresh deadline has been reached.
             partitionMetadata = group.computePartitionMetadata(
                 metadataImage.topics(),
-                metadataImage.cluster()
+                metadataImage.cluster(),
+                topology
             );
 
             if (!partitionMetadata.equals(group.partitionMetadata())) {
@@ -2235,7 +2259,15 @@ public class GroupMetadataManager {
             group.setMetadataRefreshDeadline(currentTimeMs + streamsGroupMetadataRefreshIntervalMs, groupEpoch);
         }
 
-        // 2. Update the target assignment if the group epoch is larger than the target assignment epoch or a static member
+        // If we updated the groupEpoch, we may need to reconfigure the topology
+        ConfiguredTopology configuredTopology = group.configuredTopology();
+        if (bumpGroupEpoch) {
+            log.info("[GroupId {}] Configuring the topology {}", groupId, topology);
+            configuredTopology =
+                InternalTopicManager.configureTopics(logContext, topology, partitionMetadata);
+        }
+
+        // 4. Update the target assignment if the group epoch is larger than the target assignment epoch or a static member
         // replaces an existing static member. The delta between the existing and the new target assignment is persisted to the partition.
         int targetAssignmentEpoch = group.assignmentEpoch();
         org.apache.kafka.coordinator.group.streams.Assignment targetAssignment = group.targetAssignment(memberId);
@@ -2245,6 +2277,7 @@ public class GroupMetadataManager {
                 groupEpoch,
                 member,
                 updatedMember,
+                configuredTopology,
                 partitionMetadata,
                 staticMemberReplaced,
                 records
@@ -2252,7 +2285,7 @@ public class GroupMetadataManager {
             targetAssignmentEpoch = groupEpoch;
         }
 
-        // 3. Reconcile the member's assignment with the target assignment if the member is not
+        // 5. Reconcile the member's assignment with the target assignment if the member is not
         // fully reconciled yet.
         updatedMember = maybeReconcile(
             groupId,
@@ -2290,13 +2323,20 @@ public class GroupMetadataManager {
             response.setWarmupTasks(createStreamsGroupHeartbeatResponseTaskIds(updatedMember.assignedWarmupTasks()));
         }
 
-
         Map<String, CreatableTopic> internalTopicsToBeCreated = Collections.emptyMap();
-        if (group.configuredTopology() != null) {
-            internalTopicsToBeCreated = group.configuredTopology().internalTopicsToBeCreated();
-            // TODO: Internal topic validation status
+        if (configuredTopology != null && configuredTopology.topicConfigurationException().isPresent()) {
+            TopicConfigurationException exception = configuredTopology.topicConfigurationException().get();
+            internalTopicsToBeCreated = configuredTopology.internalTopicsToBeCreated();
+            returnedStatus.add(
+                new StreamsGroupHeartbeatResponseData.Status()
+                    .setStatusCode(exception.status().code())
+                    .setStatusDetail(exception.getMessage())
+            );
         }
 
+        if (!returnedStatus.isEmpty()) {
+            response.setStatus(returnedStatus);
+        }
         return new CoordinatorResult<>(records, new StreamsGroupHeartbeatResult(response, internalTopicsToBeCreated));
     }
 
@@ -2875,7 +2915,7 @@ public class GroupMetadataManager {
      * @param useClassicProtocol    Whether the member uses the classic protocol.
      * @param records               The list to accumulate records created to replace
      *                              the previous static member.
-     *                              
+     *
      * @return The existing consumer group member or a new one.
      */
     private ConsumerGroupMember getOrMaybeSubscribeStaticConsumerGroupMember(
@@ -3306,9 +3346,9 @@ public class GroupMetadataManager {
         if (!updatedMember.equals(member)) {
             records.add(newStreamsGroupMemberRecord(groupId, updatedMember));
 
-            if (!updatedMember.topologyId().equals(member.topologyId())) {
-                log.info("[GroupId {}] Member {} updated its topology ID to: {}.",
-                    groupId, memberId, updatedMember.topologyId());
+            if (updatedMember.topologyEpoch() != member.topologyEpoch()) {
+                log.info("[GroupId {}] Member {} updated its topology epoch to: {}.",
+                    groupId, memberId, updatedMember.topologyEpoch());
                 return true;
             }
         }
@@ -3714,6 +3754,7 @@ public class GroupMetadataManager {
         int groupEpoch,
         StreamsGroupMember member,
         StreamsGroupMember updatedMember,
+        ConfiguredTopology configuredTopology,
         Map<String, org.apache.kafka.coordinator.group.streams.TopicMetadata> subscriptionMetadata,
         boolean staticMemberReplaced,
         List<CoordinatorRecord> records
@@ -3724,7 +3765,7 @@ public class GroupMetadataManager {
             org.apache.kafka.coordinator.group.streams.TargetAssignmentBuilder assignmentResultBuilder =
                 new org.apache.kafka.coordinator.group.streams.TargetAssignmentBuilder(group.groupId(), groupEpoch, taskAssignors.get(preferredServerAssignor))
                     .withMembers(group.members())
-                    .withTopology(group.topology())
+                    .withTopology(configuredTopology)
                     .withStaticMembers(group.staticMembers())
                     .withPartitionMetadata(subscriptionMetadata)
                     .withTargetAssignment(group.targetAssignment())
@@ -4737,7 +4778,6 @@ public class GroupMetadataManager {
                 request.instanceId(),
                 request.rackId(),
                 request.rebalanceTimeoutMs(),
-                request.topologyId(),
                 request.topology(),
                 context.clientId(),
                 context.clientAddress.toString(),

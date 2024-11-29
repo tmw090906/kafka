@@ -16,12 +16,9 @@
  */
 package org.apache.kafka.coordinator.group.streams.topics;
 
-import org.apache.kafka.common.errors.StreamsMissingSourceTopicsException;
 import org.apache.kafka.common.utils.LogContext;
-
 import org.slf4j.Logger;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -38,8 +35,6 @@ public class RepartitionTopics {
     private final Logger log;
     private final Map<String, ConfiguredSubtopology> subtopologyToConfiguredSubtopology;
     private final Function<String, Integer> topicPartitionCountProvider;
-
-    private final Map<String, Set<String>> missingInputTopicsBySubtopology = new HashMap<>();
 
     public RepartitionTopics(final LogContext logContext,
                              final Map<String, ConfiguredSubtopology> subtopologyToConfiguredSubtopology,
@@ -69,27 +64,14 @@ public class RepartitionTopics {
 
             final Set<String> missingSourceTopicsForSubtopology = computeMissingExternalSourceTopics(configuredSubtopology);
             missingSourceTopicsForTopology.addAll(missingSourceTopicsForSubtopology);
-            if (!missingSourceTopicsForSubtopology.isEmpty()) {
-                final String subtopologyId = subtopologyEntry.getKey();
-                missingInputTopicsBySubtopology.put(subtopologyId, missingSourceTopicsForSubtopology);
-                log.error("Subtopology {} has missing source topics {} and will be excluded from the current assignment, "
-                        + "this can be due to the consumer client's metadata being stale or because they have "
-                        + "not been created yet. Please verify that you have created all input topics; if they "
-                        + "do exist, you just need to wait for the metadata to be updated, at which time a new "
-                        + "rebalance will be kicked off automatically and the topology will be retried at that time.",
-                    subtopologyId, missingSourceTopicsForSubtopology);
-            }
         }
 
         if (missingSourceTopicsForTopology.isEmpty()) {
             setRepartitionSourceTopicPartitionCount(configuredRepartitionTopics);
             return configuredRepartitionTopics;
         } else {
-            Set<String> missingSourceTopics = missingInputTopicsBySubtopology.values().stream()
-                .flatMap(Collection::stream)
-                .collect(Collectors.toSet());
-            throw new StreamsMissingSourceTopicsException(String.format("Missing source topics: %s",
-                String.join(", ", missingSourceTopics)));
+            throw TopicConfigurationException.missingSourceTopics(String.format("Missing source topics: %s",
+                String.join(", ", missingSourceTopicsForTopology)));
         }
     }
 
@@ -137,7 +119,7 @@ public class RepartitionTopics {
                 }
             }
             if (!progressMadeThisIteration && partitionCountNeeded) {
-                throw new StreamsMissingSourceTopicsException("Failed to compute number of partitions for all " +
+                throw TopicConfigurationException.missingSourceTopics("Failed to compute number of partitions for all " +
                     "repartition topics, make sure all user input topics are created and all pattern subscriptions " +
                     "match at least one topic in the cluster");
             }

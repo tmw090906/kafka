@@ -16,8 +16,8 @@
  */
 package org.apache.kafka.common.errors;
 
-public class StreamsMissingSourceTopicsException extends ApiException {
-    public StreamsMissingSourceTopicsException(String message) {
+public class StreamsTopologyFencedException extends ApiException {
+    public StreamsTopologyFencedException(String message) {
         super(message);
     }
 }

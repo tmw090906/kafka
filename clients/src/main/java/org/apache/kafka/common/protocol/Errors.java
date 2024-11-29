@@ -119,12 +119,9 @@ import org.apache.kafka.common.errors.ShareSessionNotFoundException;
 import org.apache.kafka.common.errors.SnapshotNotFoundException;
 import org.apache.kafka.common.errors.StaleBrokerEpochException;
 import org.apache.kafka.common.errors.StaleMemberEpochException;
-import org.apache.kafka.common.errors.StreamsGroupUninitializedException;
-import org.apache.kafka.common.errors.StreamsInconsistentInternalTopicsException;
-import org.apache.kafka.common.errors.StreamsInconsistentTopologyException;
+import org.apache.kafka.common.errors.StreamsInvalidTopologyEpochException;
 import org.apache.kafka.common.errors.StreamsInvalidTopologyException;
-import org.apache.kafka.common.errors.StreamsMissingSourceTopicsException;
-import org.apache.kafka.common.errors.StreamsShutdownApplicationException;
+import org.apache.kafka.common.errors.StreamsTopologyFencedException;
 import org.apache.kafka.common.errors.TelemetryTooLargeException;
 import org.apache.kafka.common.errors.ThrottlingQuotaExceededException;
 import org.apache.kafka.common.errors.TimeoutException;
@@ -154,7 +151,6 @@ import org.apache.kafka.common.errors.UnsupportedForMessageFormatException;
 import org.apache.kafka.common.errors.UnsupportedSaslMechanismException;
 import org.apache.kafka.common.errors.UnsupportedVersionException;
 import org.apache.kafka.common.errors.VoterNotFoundException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -420,18 +416,9 @@ public enum Errors {
     VOTER_NOT_FOUND(127, "The voter is not part of the set of voters.", VoterNotFoundException::new),
     INVALID_REGULAR_EXPRESSION(128, "The regular expression is not valid.", InvalidRegularExpression::new),
     REBOOTSTRAP_REQUIRED(129, "Client metadata is stale, client should rebootstrap to obtain new metadata.", RebootstrapRequiredException::new),
-    STREAMS_INVALID_TOPOLOGY(130, "The supplied topology is invalid.",
-        StreamsInvalidTopologyException::new),
-    STREAMS_INCONSISTENT_TOPOLOGY(131, "The topology hash supplied is inconsistent with the topology for this consumer group.",
-        StreamsInconsistentTopologyException::new),
-    STREAMS_MISSING_SOURCE_TOPICS(132, "One or more source topics are missing.",
-        StreamsMissingSourceTopicsException::new),
-    STREAMS_GROUP_UNINITIALIZED(133, "The group is not (fully) initialized, broker-side topology information or internal topics are missing.",
-            StreamsGroupUninitializedException::new),
-    STREAMS_SHUTDOWN_APPLICATION(134, "A client requested the shutdown of the whole application.",
-            StreamsShutdownApplicationException::new),
-    STREAMS_INCONSISTENT_INTERNAL_TOPICS(135, "One or more internal topics are missing.",
-        StreamsInconsistentInternalTopicsException::new);
+    STREAMS_INVALID_TOPOLOGY(130, "The supplied topology is invalid.", StreamsInvalidTopologyException::new),
+    STREAMS_INVALID_TOPOLOGY_EPOCH(131, "The supplied topology epoch is invalid.", StreamsInvalidTopologyEpochException::new),
+    STREAMS_TOPOLOGY_FENCED(132, "The supplied topology epoch is outdated.", StreamsTopologyFencedException::new);
 
     private static final Logger log = LoggerFactory.getLogger(Errors.class);
 

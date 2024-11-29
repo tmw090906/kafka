@@ -19,6 +19,7 @@ package org.apache.kafka.coordinator.group.streams;
 import org.apache.kafka.common.message.StreamsGroupDescribeResponseData;
 import org.apache.kafka.coordinator.group.streams.topics.ConfiguredInternalTopic;
 import org.apache.kafka.coordinator.group.streams.topics.ConfiguredSubtopology;
+import org.apache.kafka.coordinator.group.streams.topics.ConfiguredTopology;
 
 import org.junit.jupiter.api.Test;
 
@@ -31,12 +32,13 @@ import static org.apache.kafka.common.utils.Utils.mkEntry;
 import static org.apache.kafka.common.utils.Utils.mkMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class StreamsConfiguredTopologyTest {
+public class ConfiguredTopologyTest {
 
     @Test
-    public void streamsTopologyIdShouldBeCorrect() {
-        StreamsConfiguredTopology topology = new StreamsConfiguredTopology("topology-id", Collections.emptyMap(), Collections.emptyMap());
-        assertEquals("topology-id", topology.topologyId());
+    public void streamstopologyEpochShouldBeCorrect() {
+        ConfiguredTopology topology = new ConfiguredTopology(1, Collections.emptyMap(), Collections.emptyMap(),
+            Optional.empty());
+        assertEquals(1, topology.topologyEpoch());
     }
 
     @Test
@@ -45,7 +47,7 @@ public class StreamsConfiguredTopologyTest {
             mkEntry("subtopology-1", new ConfiguredSubtopology()),
             mkEntry("subtopology-2", new ConfiguredSubtopology())
         );
-        StreamsConfiguredTopology topology = new StreamsConfiguredTopology("topology-id", subtopologies, Collections.emptyMap());
+        ConfiguredTopology topology = new ConfiguredTopology(1, subtopologies, Collections.emptyMap(), Optional.empty());
         assertEquals(subtopologies, topology.subtopologies());
     }
 
@@ -69,26 +71,28 @@ public class StreamsConfiguredTopologyTest {
                     Collections.singletonMap("changelog-topic-2", new ConfiguredInternalTopic("changelog-topic-2", Collections.emptyMap(), Optional.of(1), Optional.of((short) 2))))
             )
         );
-        StreamsConfiguredTopology topology = new StreamsConfiguredTopology("topology-id", subtopologies, Collections.emptyMap());
-        List<StreamsGroupDescribeResponseData.Subtopology> result = topology.asStreamsGroupDescribeTopology();
-        assertEquals(2, result.size());
-        assertEquals("subtopology-1", result.get(0).subtopologyId());
-        assertEquals(Collections.singletonList("source-topic-1"), result.get(0).sourceTopics());
-        assertEquals(Collections.singletonList("sink-topic-1"), result.get(0).repartitionSinkTopics());
-        assertEquals("repartition-topic-1", result.get(0).repartitionSourceTopics().get(0).name());
-        assertEquals((short) 3, result.get(0).repartitionSourceTopics().get(0).replicationFactor());
-        assertEquals(2, result.get(0).repartitionSourceTopics().get(0).partitions());
-        assertEquals("changelog-topic-1", result.get(0).stateChangelogTopics().get(0).name());
-        assertEquals((short) 2, result.get(0).stateChangelogTopics().get(0).replicationFactor());
-        assertEquals(1, result.get(0).stateChangelogTopics().get(0).partitions());
-        assertEquals("subtopology-2", result.get(1).subtopologyId());
-        assertEquals(Collections.singletonList("source-topic-2"), result.get(1).sourceTopics());
-        assertEquals(Collections.singletonList("sink-topic-2"), result.get(1).repartitionSinkTopics());
-        assertEquals("repartition-topic-2", result.get(1).repartitionSourceTopics().get(0).name());
-        assertEquals((short) 3, result.get(1).repartitionSourceTopics().get(0).replicationFactor());
-        assertEquals(2, result.get(1).repartitionSourceTopics().get(0).partitions());
-        assertEquals("changelog-topic-2", result.get(1).stateChangelogTopics().get(0).name());
-        assertEquals((short) 2, result.get(1).stateChangelogTopics().get(0).replicationFactor());
-        assertEquals(1, result.get(1).stateChangelogTopics().get(0).partitions());
+        ConfiguredTopology topology = new ConfiguredTopology(3, subtopologies, Collections.emptyMap(), Optional.empty());
+        StreamsGroupDescribeResponseData.Topology result = topology.asStreamsGroupDescribeTopology();
+        assertEquals(3, result.epoch());
+        List<StreamsGroupDescribeResponseData.Subtopology> resultSubtopologies = result.subtopologies();
+        assertEquals(2, resultSubtopologies.size());
+        assertEquals("subtopology-1", resultSubtopologies.get(0).subtopologyId());
+        assertEquals(Collections.singletonList("source-topic-1"), resultSubtopologies.get(0).sourceTopics());
+        assertEquals(Collections.singletonList("sink-topic-1"), resultSubtopologies.get(0).repartitionSinkTopics());
+        assertEquals("repartition-topic-1", resultSubtopologies.get(0).repartitionSourceTopics().get(0).name());
+        assertEquals((short) 3, resultSubtopologies.get(0).repartitionSourceTopics().get(0).replicationFactor());
+        assertEquals(2, resultSubtopologies.get(0).repartitionSourceTopics().get(0).partitions());
+        assertEquals("changelog-topic-1", resultSubtopologies.get(0).stateChangelogTopics().get(0).name());
+        assertEquals((short) 2, resultSubtopologies.get(0).stateChangelogTopics().get(0).replicationFactor());
+        assertEquals(1, resultSubtopologies.get(0).stateChangelogTopics().get(0).partitions());
+        assertEquals("subtopology-2", resultSubtopologies.get(1).subtopologyId());
+        assertEquals(Collections.singletonList("source-topic-2"), resultSubtopologies.get(1).sourceTopics());
+        assertEquals(Collections.singletonList("sink-topic-2"), resultSubtopologies.get(1).repartitionSinkTopics());
+        assertEquals("repartition-topic-2", resultSubtopologies.get(1).repartitionSourceTopics().get(0).name());
+        assertEquals((short) 3, resultSubtopologies.get(1).repartitionSourceTopics().get(0).replicationFactor());
+        assertEquals(2, resultSubtopologies.get(1).repartitionSourceTopics().get(0).partitions());
+        assertEquals("changelog-topic-2", resultSubtopologies.get(1).stateChangelogTopics().get(0).name());
+        assertEquals((short) 2, resultSubtopologies.get(1).stateChangelogTopics().get(0).replicationFactor());
+        assertEquals(1, resultSubtopologies.get(1).stateChangelogTopics().get(0).partitions());
     }
 }

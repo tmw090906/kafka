@@ -31,18 +31,18 @@ import java.util.stream.Stream;
  */
 public class StreamsTopology {
 
-    private final String topologyId;
+    private final int topologyEpoch;
 
     private final Map<String, Subtopology> subtopologies;
 
-    public StreamsTopology(final String topologyId,
+    public StreamsTopology(final int topologyEpoch,
                            final Map<String, Subtopology> subtopologies) {
-        this.topologyId = topologyId;
+        this.topologyEpoch = topologyEpoch;
         this.subtopologies = subtopologies;
     }
 
-    public String topologyId() {
-        return topologyId;
+    public int topologyEpoch() {
+        return topologyEpoch;
     }
 
     public Map<String, Subtopology> subtopologies() {
@@ -64,8 +64,8 @@ public class StreamsTopology {
 
     public static StreamsTopology fromRecord(StreamsGroupTopologyValue record) {
         return new StreamsTopology(
-            record.topologyId(),
-            record.topology().stream().collect(Collectors.toMap(Subtopology::subtopologyId, x -> x))
+            record.epoch(),
+            record.subtopologies().stream().collect(Collectors.toMap(Subtopology::subtopologyId, x -> x))
         );
     }
 
@@ -78,18 +78,18 @@ public class StreamsTopology {
             return false;
         }
         final StreamsTopology that = (StreamsTopology) o;
-        return Objects.deepEquals(topologyId, that.topologyId) && Objects.equals(subtopologies, that.subtopologies);
+        return Objects.deepEquals(topologyEpoch, that.topologyEpoch) && Objects.equals(subtopologies, that.subtopologies);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(topologyId, subtopologies);
+        return Objects.hash(topologyEpoch, subtopologies);
     }
 
     @Override
     public String toString() {
         return "StreamsTopology{" +
-            "topologyId=" + topologyId +
+            "topologyEpoch=" + topologyEpoch +
             ", subtopologies=" + subtopologies +
             '}';
     }

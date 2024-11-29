@@ -16,8 +16,8 @@
  */
 package org.apache.kafka.common.errors;
 
-public class StreamsGroupUninitializedException extends ApiException {
-    public StreamsGroupUninitializedException(String message) {
+public class StreamsInvalidTopologyEpochException extends ApiException {
+    public StreamsInvalidTopologyEpochException(String message) {
         super(message);
     }
 }

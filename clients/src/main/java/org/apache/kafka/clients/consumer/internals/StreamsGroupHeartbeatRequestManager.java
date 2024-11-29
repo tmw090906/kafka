@@ -27,7 +27,9 @@ import org.apache.kafka.common.errors.GroupAuthorizationException;
 import org.apache.kafka.common.errors.RetriableException;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData.CopartitionGroup;
+import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData.KeyValue;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData.TaskIds;
+import org.apache.kafka.common.message.StreamsGroupHeartbeatRequestData.Topology;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatResponseData;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatResponseData.Endpoint;
 import org.apache.kafka.common.metrics.Metrics;
@@ -245,7 +247,7 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
             String statusDetails = statuses.stream()
                 .map(status -> "(" + status.statusCode() + ") " + status.statusDetail())
                 .collect(Collectors.joining(", "));
-            logger.warn("Membership is in the following statuses: {}.", statusDetails);
+            logger.error("Membership is in the following statuses: {}.", statusDetails);
         }
 
         membershipManager.onHeartbeatSuccess(response);
@@ -471,9 +473,6 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
             // GroupId - always sent
             data.setGroupId(membershipManager.groupId());
 
-            // TopologyId - always sent
-            data.setTopologyId(streamsInterface.topologyId());
-
             // MemberId - always sent, empty until it has been received from the coordinator
             data.setMemberId(membershipManager.memberId());
 
@@ -493,8 +492,13 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
 
             // Immutable -- only sent when joining
             if (joining) {
+
                 // Topology -- sent when joining
-                data.setTopology(getTopologyFromStreams());
+                Topology topology = new Topology();
+                topology.setSubtopologies(getTopologyFromStreams());
+                topology.setEpoch(streamsInterface.topologyEpoch());
+
+                data.setTopology(topology);
                 data.setProcessId(streamsInterface.processId().toString());
                 data.setActiveTasks(Collections.emptyList());
                 data.setStandbyTasks(Collections.emptyList());
@@ -623,6 +627,9 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
                 repartitionTopicInfo.setName(repartitionTopic.getKey());
                 repartitionTopic.getValue().numPartitions.ifPresent(repartitionTopicInfo::setPartitions);
                 repartitionTopic.getValue().replicationFactor.ifPresent(repartitionTopicInfo::setReplicationFactor);
+                repartitionTopic.getValue().topicConfigs.forEach((k, v) ->
+                    repartitionTopicInfo.topicConfigs().add(new KeyValue().setKey(k).setValue(v))
+                );
                 repartitionTopicsInfo.add(repartitionTopicInfo);
             }
             repartitionTopicsInfo.sort(Comparator.comparing(StreamsGroupHeartbeatRequestData.TopicInfo::name));
@@ -636,6 +643,9 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
                 final StreamsGroupHeartbeatRequestData.TopicInfo changelogTopicInfo = new StreamsGroupHeartbeatRequestData.TopicInfo();
                 changelogTopicInfo.setName(changelogTopic.getKey());
                 changelogTopic.getValue().replicationFactor.ifPresent(changelogTopicInfo::setReplicationFactor);
+                changelogTopic.getValue().topicConfigs.forEach((k, v) ->
+                    changelogTopicInfo.topicConfigs().add(new KeyValue().setKey(k).setValue(v))
+                );
                 changelogTopicsInfo.add(changelogTopicInfo);
             }
             changelogTopicsInfo.sort(Comparator.comparing(StreamsGroupHeartbeatRequestData.TopicInfo::name));

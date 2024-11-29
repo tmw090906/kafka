@@ -418,7 +418,7 @@ public class GroupMetadataManagerTest {
     public void testJoiningNonExistingStreamsGroupNoMissingTopics() {
         String groupId = "group-id";
         int rebalanceTimeoutMs = 300000;
-        String topologyId = "topology-id";
+        int topologyEpoch = 0;
         String processId = "process-id";
         String subtopologyId = "subtopology-id";
         MockTaskAssignor assignor = new MockTaskAssignor("mock");
@@ -429,8 +429,9 @@ public class GroupMetadataManagerTest {
                 .build())
             .withTaskAssignors(Collections.singletonList(assignor))
             .build();
-        final List<StreamsGroupHeartbeatRequestData.Subtopology> topology = new ArrayList<>();
-        topology.add(new StreamsGroupHeartbeatRequestData.Subtopology()
+        final StreamsGroupHeartbeatRequestData.Topology topology = new StreamsGroupHeartbeatRequestData.Topology();
+        topology.setEpoch(topologyEpoch);
+        topology.subtopologies().add(new StreamsGroupHeartbeatRequestData.Subtopology()
             .setSubtopologyId(subtopologyId)
             .setRepartitionSinkTopics(Collections.emptyList())
             .setRepartitionSourceTopics(Collections.emptyList())
@@ -438,7 +439,7 @@ public class GroupMetadataManagerTest {
             .setStateChangelogTopics(Collections.emptyList())
         );
         StreamsGroupHeartbeatRequestData heartbeat =
-            buildFirstStreamsGroupHeartbeatRequest(groupId, topologyId, topology, processId, rebalanceTimeoutMs);
+            buildFirstStreamsGroupHeartbeatRequest(groupId, topology, processId, rebalanceTimeoutMs);
         prepareStreamsGroupAssignment(assignor, heartbeat.memberId(), "subtopology-id");
 
         CoordinatorResult<StreamsGroupHeartbeatResult, CoordinatorRecord> result = context.streamsGroupHeartbeat(heartbeat);
@@ -458,7 +459,7 @@ public class GroupMetadataManagerTest {
             .setClientId("client")
             .setClientHost("localhost/127.0.0.1")
             .setRebalanceTimeoutMs(rebalanceTimeoutMs)
-            .setTopologyId(topologyId)
+            .setTopologyEpoch(topologyEpoch)
             .setProcessId(processId)
             .build();
         assertTrue(coordinatorRecords.contains(CoordinatorStreamsRecordHelpers.newStreamsGroupMemberRecord(groupId, member)));
@@ -500,7 +501,7 @@ public class GroupMetadataManagerTest {
     public void testJoiningNonExistingStreamsGroupMissingTopics() {
         String groupId = "group-id";
         int rebalanceTimeoutMs = 300000;
-        String topologyId = "topology-id";
+        int topologyEpoch = 0;
         String processId = "process-id";
         String subtopologyId = "subtopology-id";
         MockTaskAssignor assignor = new MockTaskAssignor("mock");
@@ -511,8 +512,9 @@ public class GroupMetadataManagerTest {
                 .build())
             .withTaskAssignors(Collections.singletonList(assignor))
             .build();
-        final List<StreamsGroupHeartbeatRequestData.Subtopology> topology = new ArrayList<>();
-        topology.add(new StreamsGroupHeartbeatRequestData.Subtopology()
+        final StreamsGroupHeartbeatRequestData.Topology topology = new StreamsGroupHeartbeatRequestData.Topology();
+        topology.setEpoch(topologyEpoch);
+        topology.subtopologies().add(new StreamsGroupHeartbeatRequestData.Subtopology()
             .setSubtopologyId(subtopologyId)
             .setRepartitionSinkTopics(Collections.emptyList())
             .setRepartitionSourceTopics(Collections.emptyList())
@@ -520,7 +522,7 @@ public class GroupMetadataManagerTest {
             .setStateChangelogTopics(Collections.singletonList(new TopicInfo().setName("changelog-topic")))
         );
         StreamsGroupHeartbeatRequestData heartbeat =
-            buildFirstStreamsGroupHeartbeatRequest(groupId, topologyId, topology, processId, rebalanceTimeoutMs);
+            buildFirstStreamsGroupHeartbeatRequest(groupId, topology, processId, rebalanceTimeoutMs);
         prepareStreamsGroupAssignment(assignor, heartbeat.memberId(), "subtopology-id");
 
         CoordinatorResult<StreamsGroupHeartbeatResult, CoordinatorRecord> result = context.streamsGroupHeartbeat(heartbeat);
@@ -540,7 +542,7 @@ public class GroupMetadataManagerTest {
             .setClientId("client")
             .setClientHost("localhost/127.0.0.1")
             .setRebalanceTimeoutMs(rebalanceTimeoutMs)
-            .setTopologyId(topologyId)
+            .setTopologyEpoch(topologyEpoch)
             .setProcessId(processId)
             .build();
         assertTrue(coordinatorRecords.contains(CoordinatorStreamsRecordHelpers.newStreamsGroupMemberRecord(groupId, member)));
@@ -585,7 +587,7 @@ public class GroupMetadataManagerTest {
     public void testJoiningExistingNotReadyStreamsGroupMissingTopics() {
         String groupId = "group-id";
         int rebalanceTimeoutMs = 300000;
-        String topologyId = "topology-id";
+        int topologyEpoch = 0;
         String processId = "process-id";
         MockTaskAssignor assignor = new MockTaskAssignor("mock");
         GroupMetadataManagerTestContext context = new GroupMetadataManagerTestContext.Builder()
@@ -595,7 +597,9 @@ public class GroupMetadataManagerTest {
                 .build())
             .withTaskAssignors(Collections.singletonList(assignor))
             .build();
-        final List<StreamsGroupHeartbeatRequestData.Subtopology> topology = Collections.singletonList(
+        final StreamsGroupHeartbeatRequestData.Topology topology = new StreamsGroupHeartbeatRequestData.Topology();
+        topology.setEpoch(topologyEpoch);
+        topology.subtopologies().add(
             new StreamsGroupHeartbeatRequestData.Subtopology()
                 .setSubtopologyId("subtopology-id")
                 .setSourceTopics(Collections.singletonList("bar"))
@@ -625,12 +629,12 @@ public class GroupMetadataManagerTest {
                 )
         );
         StreamsGroupHeartbeatRequestData heartbeatToCreateGroup =
-            buildFirstStreamsGroupHeartbeatRequest(groupId, topologyId, topology, processId, rebalanceTimeoutMs);
+            buildFirstStreamsGroupHeartbeatRequest(groupId, topology, processId, rebalanceTimeoutMs);
         prepareStreamsGroupAssignment(assignor, heartbeatToCreateGroup.memberId(), "subtopology-id");
         context.streamsGroupHeartbeat(heartbeatToCreateGroup);
 
         StreamsGroupHeartbeatRequestData heartbeat =
-            buildFirstStreamsGroupHeartbeatRequest(groupId, topologyId, topology, processId, rebalanceTimeoutMs);
+            buildFirstStreamsGroupHeartbeatRequest(groupId, topology, processId, rebalanceTimeoutMs);
 
         CoordinatorResult<StreamsGroupHeartbeatResult, CoordinatorRecord> result = context.streamsGroupHeartbeat(heartbeat);
 
@@ -683,7 +687,7 @@ public class GroupMetadataManagerTest {
             .setClientId("client")
             .setClientHost("localhost/127.0.0.1")
             .setRebalanceTimeoutMs(rebalanceTimeoutMs)
-            .setTopologyId(topologyId)
+            .setTopologyEpoch(topologyEpoch)
             .setProcessId(processId)
             .build();
         assertTrue(coordinatorRecords.contains(CoordinatorStreamsRecordHelpers.newStreamsGroupMemberRecord(groupId, member)));
@@ -699,20 +703,22 @@ public class GroupMetadataManagerTest {
         ));
         StreamsGroupMember updatedMember = new org.apache.kafka.coordinator.group.streams.CurrentAssignmentBuilder(member)
             .withTargetAssignment(
-                1,
+                2,
                 new org.apache.kafka.coordinator.group.streams.Assignment(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap())
             )
             .withOwnedActiveTasks(Collections.emptyList())
             .withOwnedStandbyTasks(Collections.emptyList())
             .withOwnedWarmupTasks(Collections.emptyList())
             .build();
+        assertTrue(coordinatorRecords.contains(
+            CoordinatorStreamsRecordHelpers.newStreamsGroupCurrentAssignmentRecord(groupId, updatedMember)
+        ));
         assertEquals(StreamsGroup.StreamsGroupState.NOT_READY, context.streamsGroupState("group-id"));
     }
 
     private StreamsGroupHeartbeatRequestData buildFirstStreamsGroupHeartbeatRequest(
         final String groupId,
-        final String topologyId,
-        final List<StreamsGroupHeartbeatRequestData.Subtopology> topology,
+        final StreamsGroupHeartbeatRequestData.Topology topology,
         final String processId,
         final int rebalanceTimeoutMs) {
 
@@ -723,7 +729,6 @@ public class GroupMetadataManagerTest {
             .setInstanceId(null)
             .setRackId(null)
             .setRebalanceTimeoutMs(rebalanceTimeoutMs)
-            .setTopologyId(topologyId)
             .setTopology(topology)
             .setActiveTasks(Collections.emptyList())
             .setStandbyTasks(Collections.emptyList())

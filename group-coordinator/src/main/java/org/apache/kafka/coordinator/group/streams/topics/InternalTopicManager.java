@@ -21,6 +21,7 @@ import org.apache.kafka.common.message.CreateTopicsRequestData.CreatableTopicCon
 import org.apache.kafka.common.message.CreateTopicsRequestData.CreatableTopicConfigCollection;
 import org.apache.kafka.common.utils.LogContext;
 import org.apache.kafka.coordinator.group.generated.StreamsGroupTopologyValue;
+import org.apache.kafka.coordinator.group.streams.StreamsTopology;
 import org.apache.kafka.coordinator.group.streams.TopicMetadata;
 
 import org.slf4j.Logger;
@@ -38,27 +39,12 @@ import java.util.stream.Stream;
 
 public class InternalTopicManager {
 
-    public static Map<String, CreatableTopic> missingTopics(Map<String, ConfiguredSubtopology> subtopologyMap,
-                                                            Map<String, TopicMetadata> topicMetadata) {
 
-        final Map<String, CreatableTopic> topicsToCreate = new HashMap<>();
-        for (ConfiguredSubtopology subtopology : subtopologyMap.values()) {
-            subtopology.repartitionSourceTopics().values()
-                .forEach(x -> topicsToCreate.put(x.name(), toCreatableTopic(x)));
-            subtopology.stateChangelogTopics().values()
-                .forEach(x -> topicsToCreate.put(x.name(), toCreatableTopic(x)));
-        }
-        // TODO: Validate if existing topics are compatible with the required topics
-        for (String topic : topicMetadata.keySet()) {
-            topicsToCreate.remove(topic);
-        }
-        return topicsToCreate;
-    }
-
-    public static Map<String, ConfiguredSubtopology> configureTopics(LogContext logContext,
-                                                                     Collection<StreamsGroupTopologyValue.Subtopology> subtopologies,
-                                                                     Map<String, TopicMetadata> topicMetadata) {
+    public static ConfiguredTopology configureTopics(LogContext logContext,
+                                                     StreamsTopology topology,
+                                                     Map<String, TopicMetadata> topicMetadata) {
         final Logger log = logContext.logger(InternalTopicManager.class);
+        final Collection<StreamsGroupTopologyValue.Subtopology> subtopologies = topology.subtopologies().values();
 
         final Map<String, ConfiguredSubtopology> configuredSubtopologies =
             subtopologies.stream()
@@ -85,13 +71,72 @@ public class InternalTopicManager {
         final Function<String, Integer> topicPartitionCountProvider =
             topic -> getPartitionCount(topicMetadata, topic, configuredInternalTopics);
 
-        configureRepartitionTopics(logContext, configuredSubtopologies, topicPartitionCountProvider);
-        enforceCopartitioning(logContext, configuredSubtopologies, copartitionGroupsBySubtopology, topicPartitionCountProvider, log);
-        configureChangelogTopics(logContext, configuredSubtopologies, topicPartitionCountProvider);
+        Optional<TopicConfigurationException> topicConfigurationException = Optional.empty();
+        try {
+            configureRepartitionTopics(logContext, configuredSubtopologies, topicPartitionCountProvider);
+            enforceCopartitioning(logContext, configuredSubtopologies, copartitionGroupsBySubtopology, topicPartitionCountProvider, log);
+            configureChangelogTopics(logContext, configuredSubtopologies, topicPartitionCountProvider);
+        } catch (TopicConfigurationException e) {
+            log.debug("Error configuring topics for topology {}: {}", topology.topologyEpoch(), e.toString());
+            topicConfigurationException = Optional.of(e);
+        }
 
-        return configuredSubtopologies;
+        Map<String, CreatableTopic> internalTopicsToCreate;
+        if (topicConfigurationException.isEmpty()) {
+            try {
+                internalTopicsToCreate = missingTopics(configuredSubtopologies, topicMetadata);
+                if (!internalTopicsToCreate.isEmpty()) {
+                    topicConfigurationException = Optional.of(TopicConfigurationException.missingInternalTopics(
+                        "Internal topics are missing: " + internalTopicsToCreate.keySet()
+                    ));
+                }
+            } catch (TopicConfigurationException e) {
+                log.debug("Error configuring topics for topology {}: {}", topology.topologyEpoch(), e.toString());
+                topicConfigurationException = Optional.of(e);
+                internalTopicsToCreate = Collections.emptyMap();
+            }
+        } else {
+            internalTopicsToCreate = Collections.emptyMap();
+        }
+
+        if (topicConfigurationException.isEmpty()) {
+            log.info("Valid topic configuration found, topology {} is now initialized.", topology.topologyEpoch());
+        } else {
+            log.info("Topic configuration incomplete, topology {} is not ready: {} ", topology.topologyEpoch(),
+                topicConfigurationException.toString());
+        }
+
+        return new ConfiguredTopology(
+            topology.topologyEpoch(),
+            configuredSubtopologies,
+            internalTopicsToCreate,
+            topicConfigurationException
+        );
     }
 
+
+    private static Map<String, CreatableTopic> missingTopics(Map<String, ConfiguredSubtopology> subtopologyMap,
+                                                             Map<String, TopicMetadata> topicMetadata) {
+
+        final Map<String, CreatableTopic> topicsToCreate = new HashMap<>();
+        for (ConfiguredSubtopology subtopology : subtopologyMap.values()) {
+            subtopology.repartitionSourceTopics().values()
+                .forEach(x -> topicsToCreate.put(x.name(), toCreatableTopic(x)));
+            subtopology.stateChangelogTopics().values()
+                .forEach(x -> topicsToCreate.put(x.name(), toCreatableTopic(x)));
+        }
+        for (Map.Entry<String, TopicMetadata> topic : topicMetadata.entrySet()) {
+            final TopicMetadata existingTopic = topic.getValue();
+            final CreatableTopic expectedTopic = topicsToCreate.remove(topic.getKey());
+            if (expectedTopic != null) {
+                if (existingTopic.numPartitions() != expectedTopic.numPartitions()) {
+                    throw TopicConfigurationException.incorrectlyPartitionedTopics("Existing topic " + topic.getKey() + " has different"
+                        + " number of partitions: expected " + expectedTopic.numPartitions() + ", found " + existingTopic.numPartitions());
+                }
+            }
+        }
+        return topicsToCreate;
+    }
 
     private static void configureRepartitionTopics(LogContext logContext,
                                                    Map<String, ConfiguredSubtopology> configuredSubtopologies,
@@ -158,9 +203,8 @@ public class InternalTopicManager {
 
         creatableTopic.setName(config.name());
 
-        if (!config.numberOfPartitions().isPresent()) {
-            throw new IllegalStateException(
-                "Number of partitions must be set for topic " + config.name());
+        if (config.numberOfPartitions().isEmpty()) {
+            throw new IllegalStateException("Number of partitions must be set for topic " + config.name());
         } else {
             creatableTopic.setNumPartitions(config.numberOfPartitions().get());
         }

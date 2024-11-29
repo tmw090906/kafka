@@ -1012,14 +1012,14 @@ public class StickyTaskAssignorTest {
         return size;
     }
 
-    private Set<Integer> getActiveTasks(GroupAssignment result, final String topologyId, String... memberIds) {
+    private Set<Integer> getActiveTasks(GroupAssignment result, final String topologyEpoch, String... memberIds) {
         Set<Integer> res = new HashSet<>();
         for (String memberId : memberIds) {
             final MemberAssignment testMember = result.members().get(memberId);
             assertNotNull(testMember);
             assertNotNull(testMember.activeTasks());
-            if (testMember.activeTasks().get(topologyId) != null) {
-                res.addAll(testMember.activeTasks().get(topologyId));
+            if (testMember.activeTasks().get(topologyEpoch) != null) {
+                res.addAll(testMember.activeTasks().get(topologyEpoch));
             }
         }
         return res;

@@ -17,7 +17,6 @@
 package org.apache.kafka.coordinator.group.streams.topics;
 
 import org.apache.kafka.common.errors.StreamsInvalidTopologyException;
-import org.apache.kafka.common.errors.StreamsMissingSourceTopicsException;
 import org.apache.kafka.common.utils.LogContext;
 
 import org.slf4j.Logger;
@@ -75,7 +74,7 @@ public class ChangelogTopics {
     private int getPartitionCountOrFail(String topic) {
         final Integer topicPartitionCount = topicPartitionCountProvider.apply(topic);
         if (topicPartitionCount == null) {
-            throw new StreamsMissingSourceTopicsException("No partition count for source topic " + topic);
+            throw TopicConfigurationException.missingSourceTopics("No partition count for source topic " + topic);
         }
         return topicPartitionCount;
     }

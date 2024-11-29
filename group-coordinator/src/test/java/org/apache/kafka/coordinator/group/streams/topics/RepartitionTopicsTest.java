@@ -16,9 +16,8 @@
  */
 package org.apache.kafka.coordinator.group.streams.topics;
 
-import org.apache.kafka.common.errors.StreamsMissingSourceTopicsException;
+import org.apache.kafka.common.requests.StreamsGroupHeartbeatResponse.Status;
 import org.apache.kafka.common.utils.LogContext;
-
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -120,10 +119,11 @@ public class RepartitionTopicsTest {
             topicPartitionCountProvider
         );
 
-        final StreamsMissingSourceTopicsException exception = assertThrows(StreamsMissingSourceTopicsException.class,
+        final TopicConfigurationException exception = assertThrows(TopicConfigurationException.class,
             repartitionTopics::setup);
 
         assertNotNull(exception);
+        assertEquals(Status.MISSING_SOURCE_TOPICS, exception.status());
         assertEquals("Missing source topics: source1", exception.getMessage());
     }
 
@@ -140,8 +140,9 @@ public class RepartitionTopicsTest {
             topicPartitionCountProvider
         );
 
-        StreamsMissingSourceTopicsException exception = assertThrows(StreamsMissingSourceTopicsException.class, repartitionTopics::setup);
+        TopicConfigurationException exception = assertThrows(TopicConfigurationException.class, repartitionTopics::setup);
 
+        assertEquals(Status.MISSING_SOURCE_TOPICS, exception.status());
         assertEquals(
             "Failed to compute number of partitions for all repartition topics, make sure all user input topics are created and all pattern subscriptions match at least one topic in the cluster",
             exception.getMessage()

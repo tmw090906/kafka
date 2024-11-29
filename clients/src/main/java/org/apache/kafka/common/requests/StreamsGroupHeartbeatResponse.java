@@ -39,10 +39,8 @@ import java.util.Map;
  * - {@link Errors#UNRELEASED_INSTANCE_ID}
  * - {@link Errors#GROUP_MAX_SIZE_REACHED}
  * - {@link Errors#STREAMS_INVALID_TOPOLOGY}
- * - {@link Errors#STREAMS_SHUTDOWN_APPLICATION}
- * - {@link Errors#STREAMS_INCONSISTENT_TOPOLOGY}
- * - {@link Errors#STREAMS_MISSING_SOURCE_TOPICS}
- * - {@link Errors#STREAMS_GROUP_UNINITIALIZED}
+ * - {@link Errors#STREAMS_INVALID_TOPOLOGY_EPOCH}
+ * - {@link Errors#STREAMS_TOPOLOGY_FENCED}
  */
 public class StreamsGroupHeartbeatResponse extends AbstractResponse {
     private final StreamsGroupHeartbeatResponseData data;
@@ -75,5 +73,29 @@ public class StreamsGroupHeartbeatResponse extends AbstractResponse {
     public static StreamsGroupHeartbeatResponse parse(ByteBuffer buffer, short version) {
         return new StreamsGroupHeartbeatResponse(new StreamsGroupHeartbeatResponseData(
             new ByteBufferAccessor(buffer), version));
+    }
+
+    public enum Status {
+        STALE_TOPOLOGY((byte) 0, "The topology epoch supplied is inconsistent with the topology for this streams group."),
+        MISSING_SOURCE_TOPICS((byte) 1, "One or more source topics are missing or a source topic regex resolves to zero topics."),
+        INCORRECTLY_PARTITIONED_TOPICS((byte) 2, "One or more topics expected to be copartitioned are not copartitioned."),
+        MISSING_INTERNAL_TOPICS((byte) 3, "One or more internal topics are missing."),
+        SHUTDOWN_APPLICATION((byte) 4, "A client requested the shutdown of the whole application.");
+
+        private final byte code;
+        private final String message;
+
+        Status(final byte code, final String message) {
+            this.code = code;
+            this.message = message;
+        }
+
+        public byte code() {
+            return code;
+        }
+
+        public String message() {
+            return message;
+        }
     }
 }

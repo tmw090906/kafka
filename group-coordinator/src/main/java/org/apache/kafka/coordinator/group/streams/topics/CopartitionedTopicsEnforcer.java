@@ -16,10 +16,8 @@
  */
 package org.apache.kafka.coordinator.group.streams.topics;
 
-import org.apache.kafka.common.errors.StreamsInconsistentInternalTopicsException;
 import org.apache.kafka.common.errors.StreamsInvalidTopologyException;
 import org.apache.kafka.common.utils.LogContext;
-
 import org.slf4j.Logger;
 
 import java.util.Collection;
@@ -69,7 +67,7 @@ public class CopartitionedTopicsEnforcer {
             return;
         }
 
-        final Map<Object, ConfiguredInternalTopic> repartitionTopicConfigs =
+        final Map<String, ConfiguredInternalTopic> repartitionTopicConfigs =
             copartitionedTopics.stream()
                 .filter(repartitionTopics::containsKey)
                 .collect(Collectors.toMap(topic -> topic, repartitionTopics::get));
@@ -128,12 +126,12 @@ public class CopartitionedTopicsEnforcer {
                     numberOfPartitionsOfInternalTopic,
                     config.name(),
                     numPartitionsToUseForRepartitionTopics);
-                throw new StreamsInconsistentInternalTopicsException(msg);
+                throw TopicConfigurationException.incorrectlyPartitionedTopics(msg);
             }
         }
     }
 
-    private int validateAndGetNumOfPartitions(final Map<Object, ConfiguredInternalTopic> repartitionTopicConfigs,
+    private int validateAndGetNumOfPartitions(final Map<String, ConfiguredInternalTopic> repartitionTopicConfigs,
                                               final Collection<ConfiguredInternalTopic> configuredInternalTopics) {
         final ConfiguredInternalTopic firstConfiguredInternalTopic = configuredInternalTopics.iterator().next();
 
@@ -154,7 +152,7 @@ public class CopartitionedTopicsEnforcer {
 
                 final String msg = String.format("Following topics do not have the same number of partitions: [%s]",
                     new TreeMap<>(repartitionTopics));
-                throw new StreamsInconsistentInternalTopicsException(msg);
+                throw TopicConfigurationException.incorrectlyPartitionedTopics(msg);
             }
         }
 
@@ -166,15 +164,13 @@ public class CopartitionedTopicsEnforcer {
         for (final Entry<String, Integer> entry : nonRepartitionTopicsInCopartitionGroup.entrySet()) {
             if (entry.getValue() != partitions) {
                 final TreeMap<String, Integer> sorted = new TreeMap<>(nonRepartitionTopicsInCopartitionGroup);
-                throw new StreamsInconsistentInternalTopicsException(
-                    String.format("Topics not co-partitioned: [%s]", sorted)
-                );
+                throw TopicConfigurationException.incorrectlyPartitionedTopics(String.format("Topics not co-partitioned: [%s]", sorted));
             }
         }
         return partitions;
     }
 
-    private int getMaxPartitions(final Map<Object, ConfiguredInternalTopic> repartitionTopicsInCopartitionGroup) {
+    private int getMaxPartitions(final Map<String, ConfiguredInternalTopic> repartitionTopicsInCopartitionGroup) {
         int maxPartitions = 0;
 
         for (final ConfiguredInternalTopic config : repartitionTopicsInCopartitionGroup.values()) {

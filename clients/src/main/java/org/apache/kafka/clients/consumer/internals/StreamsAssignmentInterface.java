@@ -71,9 +71,9 @@ public class StreamsAssignmentInterface {
         return processId;
     }
 
-    public String topologyId() {
-        // ToDo: As long as we do not compute the topology ID, let's use a constant one
-        return "topology-id";
+    public int topologyEpoch() {
+        // TODO: Introduce topology updating
+        return 0;
     }
 
     public Optional<HostInfo> endpoint() {

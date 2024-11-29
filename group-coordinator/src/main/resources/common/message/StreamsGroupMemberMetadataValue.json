@@ -31,8 +31,8 @@
     { "name": "RebalanceTimeoutMs", "type": "int32", "versions": "0+", "default": -1,
       "about": "The rebalance timeout." },
 
-    { "name": "TopologyId", "type": "string", "versions": "0+",
-      "about": "The ID of the topology. Must be non-empty." },
+    { "name": "TopologyEpoch", "type": "int32", "versions": "0+",
+      "about": "The epoch of the topology. Must be non-zero." },
 
     { "name": "ProcessId", "type": "string", "versions": "0+",
       "about": "Identity of the streams instance that may have multiple consumers." },

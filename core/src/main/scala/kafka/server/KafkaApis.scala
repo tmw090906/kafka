@@ -3905,7 +3905,7 @@ class KafkaApis(val requestChannel: RequestChannel,
 
       if (streamsGroupHeartbeatRequest.data().topology() != null) {
         val requiredTopics: Seq[String] =
-          streamsGroupHeartbeatRequest.data().topology().iterator().asScala.flatMap(subtopology =>
+          streamsGroupHeartbeatRequest.data().topology().subtopologies().iterator().asScala.flatMap(subtopology =>
             (subtopology.sourceTopics().iterator().asScala:Iterator[String])
               ++ (subtopology.repartitionSinkTopics().iterator().asScala:Iterator[String])
               ++ (subtopology.repartitionSourceTopics().iterator().asScala.map(_.name()):Iterator[String])
@@ -3952,21 +3952,27 @@ class KafkaApis(val requestChannel: RequestChannel,
         if (exception != null) {
           requestHelper.sendMaybeThrottle(request, streamsGroupHeartbeatRequest.getErrorResponse(exception))
         } else {
-          var responseData = response.responseData();
-          if (!response.creatableTopics().isEmpty) {
+          val responseData = response.responseData()
+          val topicsToCreate = response.creatableTopics().asScala
+          if (topicsToCreate.nonEmpty) {
 
-            if(!authHelper.authorize(request.context, CREATE, CLUSTER, CLUSTER_NAME, logIfDenied = false)) {
-              val (_, createTopicUnauthorized) = authHelper.partitionSeqByAuthorized(request.context, CREATE, TOPIC, response.creatableTopics().keySet().asScala.toSeq)(identity[String])
-              if (createTopicUnauthorized.nonEmpty) {
-                // TODO: Once topic validation is done, this should just add a status to the response
-                val errorResponse = new StreamsGroupHeartbeatResponseData()
-                errorResponse.setErrorCode(Errors.TOPIC_AUTHORIZATION_FAILED.code)
-                errorResponse.setErrorMessage(f"Unauthorized to CREATE on topics ${createTopicUnauthorized.mkString(",")}.")
-                responseData = new StreamsGroupHeartbeatResponse(errorResponse).data();
+            val createTopicUnauthorized =
+              if(!authHelper.authorize(request.context, CREATE, CLUSTER, CLUSTER_NAME, logIfDenied = false))
+                authHelper.partitionSeqByAuthorized(request.context, CREATE, TOPIC, topicsToCreate.keys.toSeq)(identity[String])._2
+              else Set.empty
+
+            if (createTopicUnauthorized.nonEmpty) {
+              if (responseData.status() == null) {
+                responseData.setStatus(new util.ArrayList());
               }
+              responseData.status().add(
+                new StreamsGroupHeartbeatResponseData.Status()
+                  .setStatusCode(StreamsGroupHeartbeatResponse.Status.MISSING_INTERNAL_TOPICS.code())
+                  .setStatusDetail("Unauthorized to CREATE on topics " + createTopicUnauthorized.mkString(",") + ".")
+              )
+            } else {
+              autoTopicCreationManager.createStreamsInternalTopics(topicsToCreate, requestContext);
             }
-
-            autoTopicCreationManager.createStreamsInternalTopics(response.creatableTopics().asScala, requestContext);
           }
 
           requestHelper.sendMaybeThrottle(request, new StreamsGroupHeartbeatResponse(responseData))

@@ -37,9 +37,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class StreamsTopologyTest {
 
     @Test
-    public void streamsTopologyIdShouldBeCorrect() {
-        StreamsTopology topology = new StreamsTopology("topology-id", Collections.emptyMap());
-        assertEquals("topology-id", topology.topologyId());
+    public void streamsTopologyEpochShouldBeCorrect() {
+        StreamsTopology topology = new StreamsTopology(1, Collections.emptyMap());
+        assertEquals(1, topology.topologyEpoch());
     }
 
     @Test
@@ -48,7 +48,7 @@ public class StreamsTopologyTest {
             mkEntry("subtopology-1", new Subtopology().setSubtopologyId("subtopology-1")),
             mkEntry("subtopology-2", new Subtopology().setSubtopologyId("subtopology-2"))
         );
-        StreamsTopology topology = new StreamsTopology("topology-id", subtopologies);
+        StreamsTopology topology = new StreamsTopology(1, subtopologies);
         assertEquals(subtopologies, topology.subtopologies());
     }
 
@@ -74,7 +74,7 @@ public class StreamsTopologyTest {
                 ))
             )
         );
-        StreamsTopology topology = new StreamsTopology("topology-id", subtopologies);
+        StreamsTopology topology = new StreamsTopology(1, subtopologies);
         Set<String> expectedTopics = new HashSet<>(Arrays.asList(
             "source-topic-1", "source-topic-2", "repartition-topic-1", "repartition-topic-2",
             "source-topic-3", "source-topic-4", "repartition-topic-3", "repartition-topic-4",
@@ -86,13 +86,13 @@ public class StreamsTopologyTest {
     @Test
     public void fromRecordShouldCreateCorrectTopology() {
         StreamsGroupTopologyValue record = new StreamsGroupTopologyValue()
-            .setTopologyId("topology-id")
-            .setTopology(Arrays.asList(
+            .setEpoch(1)
+            .setSubtopologies(Arrays.asList(
                 new Subtopology().setSubtopologyId("subtopology-1"),
                 new Subtopology().setSubtopologyId("subtopology-2")
             ));
         StreamsTopology topology = StreamsTopology.fromRecord(record);
-        assertEquals("topology-id", topology.topologyId());
+        assertEquals(1, topology.topologyEpoch());
         assertEquals(2, topology.subtopologies().size());
         assertTrue(topology.subtopologies().containsKey("subtopology-1"));
         assertTrue(topology.subtopologies().containsKey("subtopology-2"));
@@ -104,8 +104,8 @@ public class StreamsTopologyTest {
             mkEntry("subtopology-1", new Subtopology().setSubtopologyId("subtopology-1")),
             mkEntry("subtopology-2", new Subtopology().setSubtopologyId("subtopology-2"))
         );
-        StreamsTopology topology1 = new StreamsTopology("topology-id", subtopologies);
-        StreamsTopology topology2 = new StreamsTopology("topology-id", subtopologies);
+        StreamsTopology topology1 = new StreamsTopology(1, subtopologies);
+        StreamsTopology topology2 = new StreamsTopology(1, subtopologies);
         assertEquals(topology1, topology2);
     }
 
@@ -117,8 +117,8 @@ public class StreamsTopologyTest {
         Map<String, Subtopology> subtopologies2 = mkMap(
             mkEntry("subtopology-2", new Subtopology().setSubtopologyId("subtopology-2"))
         );
-        StreamsTopology topology1 = new StreamsTopology("topology-id-1", subtopologies1);
-        StreamsTopology topology2 = new StreamsTopology("topology-id-2", subtopologies2);
+        StreamsTopology topology1 = new StreamsTopology(3, subtopologies1);
+        StreamsTopology topology2 = new StreamsTopology(4, subtopologies2);
         assertNotEquals(topology1, topology2);
     }
 
@@ -128,8 +128,8 @@ public class StreamsTopologyTest {
             mkEntry("subtopology-1", new Subtopology().setSubtopologyId("subtopology-1")),
             mkEntry("subtopology-2", new Subtopology().setSubtopologyId("subtopology-2"))
         );
-        StreamsTopology topology1 = new StreamsTopology("topology-id", subtopologies);
-        StreamsTopology topology2 = new StreamsTopology("topology-id", subtopologies);
+        StreamsTopology topology1 = new StreamsTopology(1, subtopologies);
+        StreamsTopology topology2 = new StreamsTopology(1, subtopologies);
         assertEquals(topology1.hashCode(), topology2.hashCode());
     }
 
@@ -139,8 +139,8 @@ public class StreamsTopologyTest {
             mkEntry("subtopology-1", new Subtopology().setSubtopologyId("subtopology-1")),
             mkEntry("subtopology-2", new Subtopology().setSubtopologyId("subtopology-2"))
         );
-        StreamsTopology topology = new StreamsTopology("topology-id", subtopologies);
-        String expectedString = "StreamsTopology{topologyId=topology-id, subtopologies=" + subtopologies + "}";
+        StreamsTopology topology = new StreamsTopology(1, subtopologies);
+        String expectedString = "StreamsTopology{topologyEpoch=1, subtopologies=" + subtopologies + "}";
         assertEquals(expectedString, topology.toString());
     }
 }

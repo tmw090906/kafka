@@ -21,12 +21,10 @@ import org.apache.kafka.coordinator.common.runtime.CoordinatorRecord;
 import org.apache.kafka.coordinator.group.generated.StreamsGroupTopologyKey;
 import org.apache.kafka.coordinator.group.generated.StreamsGroupTopologyValue;
 import org.apache.kafka.server.common.ApiMessageAndVersion;
-
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -34,85 +32,93 @@ class CoordinatorStreamsRecordHelpersTest {
 
     @Test
     public void testNewStreamsGroupTopologyRecord() {
-        List<StreamsGroupHeartbeatRequestData.Subtopology> topology =
-            Collections.singletonList(new StreamsGroupHeartbeatRequestData.Subtopology()
-                .setSubtopologyId("subtopology-id")
-                .setRepartitionSinkTopics(Collections.singletonList("foo"))
-                .setSourceTopics(Collections.singletonList("bar"))
-                .setSourceTopicRegex(Collections.singletonList("regex"))
-                .setRepartitionSourceTopics(
-                    Collections.singletonList(
-                        new StreamsGroupHeartbeatRequestData.TopicInfo()
-                            .setName("repartition")
-                            .setPartitions(4)
-                            .setReplicationFactor((short) 3)
-                            .setTopicConfigs(Collections.singletonList(
-                                new StreamsGroupHeartbeatRequestData.KeyValue()
-                                    .setKey("config-name1")
-                                    .setValue("config-value1")
-                            ))
+        StreamsGroupHeartbeatRequestData.Topology topology =
+            new StreamsGroupHeartbeatRequestData.Topology()
+                .setEpoch(42)
+                .setSubtopologies(
+                    Collections.singletonList(new StreamsGroupHeartbeatRequestData.Subtopology()
+                        .setSubtopologyId("subtopology-id")
+                        .setRepartitionSinkTopics(Collections.singletonList("foo"))
+                        .setSourceTopics(Collections.singletonList("bar"))
+                        .setSourceTopicRegex(Collections.singletonList("regex"))
+                        .setRepartitionSourceTopics(
+                            Collections.singletonList(
+                                new StreamsGroupHeartbeatRequestData.TopicInfo()
+                                    .setName("repartition")
+                                    .setPartitions(4)
+                                    .setReplicationFactor((short) 3)
+                                    .setTopicConfigs(Collections.singletonList(
+                                        new StreamsGroupHeartbeatRequestData.KeyValue()
+                                            .setKey("config-name1")
+                                            .setValue("config-value1")
+                                    ))
+                            )
+                        )
+                        .setStateChangelogTopics(
+                            Collections.singletonList(
+                                new StreamsGroupHeartbeatRequestData.TopicInfo()
+                                    .setName("changelog")
+                                    .setReplicationFactor((short) 2)
+                                    .setTopicConfigs(Collections.singletonList(
+                                        new StreamsGroupHeartbeatRequestData.KeyValue()
+                                            .setKey("config-name2")
+                                            .setValue("config-value2")
+                                    ))
+                            )
+                        )
+                        .setCopartitionGroups(Arrays.asList(
+                            new StreamsGroupHeartbeatRequestData.CopartitionGroup()
+                                .setSourceTopics(Collections.singletonList((short) 0))
+                                .setRepartitionSourceTopics(Collections.singletonList((short) 0)),
+                            new StreamsGroupHeartbeatRequestData.CopartitionGroup()
+                                .setSourceTopicRegex(Collections.singletonList((short) 0))
+                        ))
                     )
-                )
-                .setStateChangelogTopics(
-                    Collections.singletonList(
-                        new StreamsGroupHeartbeatRequestData.TopicInfo()
-                            .setName("changelog")
-                            .setReplicationFactor((short) 2)
-                            .setTopicConfigs(Collections.singletonList(
-                                new StreamsGroupHeartbeatRequestData.KeyValue()
-                                    .setKey("config-name2")
-                                    .setValue("config-value2")
-                            ))
-                    )
-                )
-                .setCopartitionGroups(Arrays.asList(
-                    new StreamsGroupHeartbeatRequestData.CopartitionGroup()
-                        .setSourceTopics(Collections.singletonList((short) 0))
-                        .setRepartitionSourceTopics(Collections.singletonList((short) 0)),
-                    new StreamsGroupHeartbeatRequestData.CopartitionGroup()
-                        .setSourceTopicRegex(Collections.singletonList((short) 0))
-                ))
-            );
+                );
 
-        List<StreamsGroupTopologyValue.Subtopology> expectedTopology =
-            Collections.singletonList(new StreamsGroupTopologyValue.Subtopology()
-                .setSubtopologyId("subtopology-id")
-                .setRepartitionSinkTopics(Collections.singletonList("foo"))
-                .setSourceTopics(Collections.singletonList("bar"))
-                .setSourceTopicRegex(Collections.singletonList("regex"))
-                .setRepartitionSourceTopics(
-                    Collections.singletonList(
-                        new StreamsGroupTopologyValue.TopicInfo()
-                            .setName("repartition")
-                            .setPartitions(4)
-                            .setReplicationFactor((short) 3)
-                            .setTopicConfigs(Collections.singletonList(
-                                new StreamsGroupTopologyValue.TopicConfig()
-                                    .setKey("config-name1")
-                                    .setValue("config-value1")
-                            ))
+        StreamsGroupTopologyValue expectedTopology =
+            new StreamsGroupTopologyValue()
+                .setEpoch(42)
+                .setSubtopologies(
+                    Collections.singletonList(new StreamsGroupTopologyValue.Subtopology()
+                        .setSubtopologyId("subtopology-id")
+                        .setRepartitionSinkTopics(Collections.singletonList("foo"))
+                        .setSourceTopics(Collections.singletonList("bar"))
+                        .setSourceTopicRegex(Collections.singletonList("regex"))
+                        .setRepartitionSourceTopics(
+                            Collections.singletonList(
+                                new StreamsGroupTopologyValue.TopicInfo()
+                                    .setName("repartition")
+                                    .setPartitions(4)
+                                    .setReplicationFactor((short) 3)
+                                    .setTopicConfigs(Collections.singletonList(
+                                        new StreamsGroupTopologyValue.TopicConfig()
+                                            .setKey("config-name1")
+                                            .setValue("config-value1")
+                                    ))
+                            )
+                        )
+                        .setStateChangelogTopics(
+                            Collections.singletonList(
+                                new StreamsGroupTopologyValue.TopicInfo()
+                                    .setName("changelog")
+                                    .setReplicationFactor((short) 2)
+                                    .setTopicConfigs(Collections.singletonList(
+                                        new StreamsGroupTopologyValue.TopicConfig()
+                                            .setKey("config-name2")
+                                            .setValue("config-value2")
+                                    ))
+                            )
+                        )
+                        .setCopartitionGroups(Arrays.asList(
+                            new StreamsGroupTopologyValue.CopartitionGroup()
+                                .setSourceTopics(Collections.singletonList((short) 0))
+                                .setRepartitionSourceTopics(Collections.singletonList((short) 0)),
+                            new StreamsGroupTopologyValue.CopartitionGroup()
+                                .setSourceTopicRegex(Collections.singletonList((short) 0))
+                        ))
                     )
-                )
-                .setStateChangelogTopics(
-                    Collections.singletonList(
-                        new StreamsGroupTopologyValue.TopicInfo()
-                            .setName("changelog")
-                            .setReplicationFactor((short) 2)
-                            .setTopicConfigs(Collections.singletonList(
-                                new StreamsGroupTopologyValue.TopicConfig()
-                                    .setKey("config-name2")
-                                    .setValue("config-value2")
-                            ))
-                    )
-                )
-                .setCopartitionGroups(Arrays.asList(
-                    new StreamsGroupTopologyValue.CopartitionGroup()
-                        .setSourceTopics(Collections.singletonList((short) 0))
-                        .setRepartitionSourceTopics(Collections.singletonList((short) 0)),
-                    new StreamsGroupTopologyValue.CopartitionGroup()
-                        .setSourceTopicRegex(Collections.singletonList((short) 0))
-                ))
-            );
+                );
 
         CoordinatorRecord expectedRecord = new CoordinatorRecord(
             new ApiMessageAndVersion(
@@ -120,8 +126,7 @@ class CoordinatorStreamsRecordHelpersTest {
                     .setGroupId("group-id"),
                 (short) 23),
             new ApiMessageAndVersion(
-                new StreamsGroupTopologyValue()
-                    .setTopology(expectedTopology),
+                expectedTopology,
                 (short) 0));
 
         assertEquals(expectedRecord, CoordinatorStreamsRecordHelpers.newStreamsGroupTopologyRecord(
