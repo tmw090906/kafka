@@ -782,6 +782,7 @@ org.apache.kafka.clients.consumer.KafkaConsumerTest:
 - testRegexSubscription
 - testResetToCommittedOffset
 - testResetUsingAutoResetPolicy
+- testResetUsingDurationBasedAutoResetPolicy
 - testReturnRecordsDuringRebalance
 - testSecondPollWithDeserializationErrorThrowsRecordDeserializationException
 - testSeekNegative
@@ -820,6 +821,7 @@ org.apache.kafka.clients.consumer.MockConsumerTest:
 - endOffsetsShouldBeIdempotent
 - shouldNotClearRecordsForPausedPartitions
 - testConsumerRecordsIsEmptyWhenReturningNoRecords
+- testDurationBasedOffsetReset
 - testRe2JPatternSubscription
 - testRebalanceListener
 - testSimpleMock
@@ -1093,7 +1095,7 @@ org.apache.kafka.clients.consumer.internals.AsyncKafkaConsumerTest:
 org.apache.kafka.clients.consumer.internals.AutoOffsetResetStrategyTest:
 - testEqualsAndHashCode
 - testFromString
-- testIsValid
+- testTimestamp
 - testValidator
 org.apache.kafka.clients.consumer.internals.CommitRequestManagerTest:
 - testAsyncAutocommitNotRetriedAfterException
@@ -1908,6 +1910,7 @@ org.apache.kafka.clients.consumer.internals.OffsetFetcherTest:
 - testUpdateFetchPositionOfPausedPartitionsWithAValidPosition
 - testUpdateFetchPositionOfPausedPartitionsWithoutAValidPosition
 - testUpdateFetchPositionResetToDefaultOffset
+- testUpdateFetchPositionResetToDurationOffset
 - testUpdateFetchPositionResetToEarliestOffset
 - testUpdateFetchPositionResetToLatestOffset
 - testresetPositionsMetadataRefresh
