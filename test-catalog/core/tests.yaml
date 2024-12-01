@@ -99,7 +99,11 @@ kafka.admin.ConfigCommandIntegrationTest:
 - testNullStatusOnKraftCommandAlterClientMetrics
 - testNullStatusOnKraftCommandAlterGroup
 - testNullStatusOnKraftCommandAlterUserQuota
+- testUnsupportedVersionException
+- testUpdateBrokerConfigNotAffectedByInvalidConfig
 - testUpdateClusterWideConfigInKRaftThenShouldSuccessful
+- testUpdateInvalidBrokerConfigs
+- testUpdateInvalidTopicConfigs
 - testUpdatePerBrokerConfigInKRaftThenShouldFail
 - testUpdatePerBrokerConfigWithListenerNameInKRaftThenShouldSuccessful
 kafka.admin.ConfigCommandTest:
