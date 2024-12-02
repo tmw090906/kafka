@@ -23,19 +23,6 @@ kafka.KafkaConfigTest:
 - testKafkaSslPasswords
 - testKafkaSslPasswordsWithSymbols
 - testMustContainQuorumVotersIfUsingProcessRoles
-- testZkSslCipherSuites
-- testZkSslClientEnable
-- testZkSslCrlEnable
-- testZkSslEnabledProtocols
-- testZkSslEndpointIdentificationAlgorithm
-- testZkSslKeyStoreLocation
-- testZkSslKeyStoreType
-- testZkSslOcspEnable
-- testZkSslProtocol
-- testZkSslTrustStoreLocation
-- testZkSslTrustStoreType
-- testZookeeperKeyStorePassword
-- testZookeeperTrustStorePassword
 kafka.admin.AclCommandTest:
 - testAclCliWithAdminAPI
 - testAclCliWithAdminAPIAndBootstrapController
@@ -2166,11 +2153,7 @@ kafka.raft.RaftManagerTest:
 - testKRaftBrokerDoesNotDeleteMetadataLog
 - testLogDirLockWhenBrokerOnlyWithSeparateMetadataDir
 - testLogDirLockWhenControllerOnly
-- testMigratingZkBrokerDeletesMetadataLog
 - testNodeIdPresent
-- testNonMigratingZkBrokerDoesNotDeleteMetadataLog
-- testZkBrokerDoesNotDeleteSameLogDir
-- testZkBrokerDoesNotDeleteSeparateLogDirs
 kafka.security.authorizer.AclEntryTest:
 - testAclJsonConversion
 kafka.security.authorizer.AuthorizerTest:
@@ -2400,7 +2383,6 @@ kafka.server.BrokerLifecycleManagerTest:
 - testRegistrationIncludesDirs
 - testRegistrationTimeout
 - testSuccessfulRegistration
-- testSuccessfulRegistrationDuringMigration
 kafka.server.BrokerMetricNamesTest:
 - testMetrics
 kafka.server.BrokerRegistrationRequestTest:
@@ -3510,7 +3492,6 @@ kafka.server.ReplicaManagerTest:
 - testFetchRequestRateMetrics
 - testFetchShouldReturnImmediatelyWhenPreferredReadReplicaIsDefined
 - testFetcherAreNotRestartedIfLeaderEpochIsNotBumpedWithKRaftPath
-- testFetcherAreNotRestartedIfLeaderEpochIsNotBumpedWithZkPath
 - testFollowerFetchWithDefaultSelectorNoForcedHwPropagation
 - testFollowerStateNotUpdatedIfLogReadFails
 - testFullLairDuringKRaftMigration
@@ -3525,7 +3506,6 @@ kafka.server.ReplicaManagerTest:
 - testInconsistentIdReturnsError
 - testMaybeAddLogDirFetchersPausingCleaning
 - testMaybeAddLogDirFetchersWithoutEpochCache
-- testMetadataLogDirFailureInZkShouldNotHaltBroker
 - testNotCallStopPartitionsForNonTieredTopics
 - testOffsetOutOfRangeExceptionWhenFetchMessages
 - testOffsetOutOfRangeExceptionWhenReadFromLog
