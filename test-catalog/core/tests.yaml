@@ -418,8 +418,6 @@ kafka.api.PlaintextAdminIntegrationTest:
 - testAbortTransactionTimeout
 - testAclOperations
 - testAdminClientHandlingBadIPWithoutTimeout
-- testAlterConfigsForLog4jLogLevelsDoesNotWork
-- testAlterConfigsWithOptionTimeoutMs
 - testAlterLogDirsAfterDeleteRecords
 - testAlterReplicaLogDirs
 - testAppendAlreadyExistsConfigsAndSubtractNotExistsConfigs
@@ -2687,7 +2685,6 @@ kafka.server.DynamicBrokerReconfigurationTest:
 - testUncleanLeaderElectionEnable
 - testUpdatesUsingConfigProvider
 kafka.server.DynamicConfigChangeTest:
-- testAlterDefaultTopicConfig
 - testBrokerIdConfigChangeAndDelete
 - testClientIdQuotaConfigChange
 - testConfigChange
@@ -2832,7 +2829,6 @@ kafka.server.KRaftClusterTest:
 - testDirectToControllerCommunicationFailsOnOlderMetadataVersion
 - testIncreaseNumIoThreads
 - testIncrementalAlterConfigs
-- testLegacyAlterConfigs
 - testOverlyLargeCreateTopics
 - testReconfigureControllerAuthorizer
 - testReconfigureControllerClientQuotas
