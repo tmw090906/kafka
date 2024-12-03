@@ -18,6 +18,7 @@ package org.apache.kafka.coordinator.group.streams.topics;
 
 import org.apache.kafka.common.errors.StreamsInvalidTopologyException;
 import org.apache.kafka.common.utils.LogContext;
+
 import org.slf4j.Logger;
 
 import java.util.Collection;

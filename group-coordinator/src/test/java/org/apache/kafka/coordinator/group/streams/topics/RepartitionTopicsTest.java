@@ -18,6 +18,7 @@ package org.apache.kafka.coordinator.group.streams.topics;
 
 import org.apache.kafka.common.requests.StreamsGroupHeartbeatResponse.Status;
 import org.apache.kafka.common.utils.LogContext;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;

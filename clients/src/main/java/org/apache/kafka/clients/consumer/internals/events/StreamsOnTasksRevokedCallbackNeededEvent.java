@@ -40,4 +40,3 @@ public class StreamsOnTasksRevokedCallbackNeededEvent extends CompletableBackgro
             ", active tasks to revoke=" + activeTasksToRevoke;
     }
 }
-

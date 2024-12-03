@@ -27,4 +27,3 @@ public class StreamsOnAllTasksLostCallbackNeededEvent extends CompletableBackgro
         return super.toStringBase();
     }
 }
-
