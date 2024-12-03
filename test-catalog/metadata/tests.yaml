@@ -61,6 +61,7 @@ org.apache.kafka.controller.ClientQuotaControlManagerTest:
 - testValidateQuotaKeyValueForValidRequestPercentage
 - testValidateQuotaKeyValueForZeroQuota
 org.apache.kafka.controller.ClusterControlManagerTest:
+- testBrokerContactTimesAreUpdatedOnClusterControlActivation
 - testDefaultDir
 - testHasOnlineDir
 - testPlaceReplicas

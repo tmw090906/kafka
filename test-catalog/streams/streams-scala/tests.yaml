@@ -47,6 +47,8 @@ org.apache.kafka.streams.scala.kstream.KTableTest:
 - testFilterRecordsSatisfyingPredicate
 - testJoinCorrectlyRecords
 - testJoinCorrectlyRecordsAndStateStore
+- testJoinWithBiFunctionKeyExtractor
+- testLeftJoinWithBiFunctionKeyExtractor
 - testMapValuesWithValueMapperWithKeyAndWithMaterialized
 - testMapValuesWithValueMapperWithMaterialized
 - testSettingNameOnCountProcessor
