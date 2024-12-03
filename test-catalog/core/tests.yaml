@@ -3636,6 +3636,10 @@ kafka.server.TierStateMachineTest:
 - testFencedOffsetResetAfterMovedToRemoteTier
 - testFollowerFetchMovedToTieredStore
 - testFollowerFetchOffsetOutOfRangeWithTieredStore
+kafka.server.TxnOffsetCommitRequestTest:
+- testTxnOffsetCommitWithNewConsumerGroupProtocolAndNewGroupCoordinator
+- testTxnOffsetCommitWithOldConsumerGroupProtocolAndNewGroupCoordinator
+- testTxnOffsetCommitWithOldConsumerGroupProtocolAndOldGroupCoordinator
 kafka.server.epoch.LeaderEpochFileCacheTest:
 - shouldAddEpochAndMessageOffsetToCache
 - shouldClearAllEntries

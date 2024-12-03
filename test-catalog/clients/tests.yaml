@@ -3989,6 +3989,7 @@ org.apache.kafka.common.requests.TxnOffsetCommitRequestTest:
 - testConstructor
 - testGetErrorResponse
 - testVersionSupportForGroupInstanceId
+- testVersionSupportForGroupMetadata
 org.apache.kafka.common.requests.TxnOffsetCommitResponseTest:
 - testConstructorWithErrorResponse
 - testParse
