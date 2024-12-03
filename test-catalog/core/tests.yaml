@@ -520,6 +520,7 @@ kafka.api.PlaintextConsumerFetchTest:
 - testFetchHonoursFetchSizeIfLargeRecordNotFirst
 - testFetchHonoursMaxPartitionFetchBytesIfLargeRecordNotFirst
 - testFetchInvalidOffset
+- testFetchOutOfRangeOffsetResetConfigByDuration
 - testFetchOutOfRangeOffsetResetConfigEarliest
 - testFetchOutOfRangeOffsetResetConfigLatest
 - testFetchRecordLargerThanFetchMaxBytes
