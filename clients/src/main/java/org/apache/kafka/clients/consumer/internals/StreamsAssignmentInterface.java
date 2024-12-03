@@ -304,9 +304,9 @@ public class StreamsAssignmentInterface {
 
     private ApplicationEventHandler applicationEventHandler = null;
 
-    private Optional<Function<Set<StreamsAssignmentInterface.TaskId>, Optional<Exception>>> onTasksRevokedCallback = null;
-    private Optional<Function<Assignment, Optional<Exception>>> onTasksAssignedCallback = null;
-    private Optional<Supplier<Optional<Exception>>> onAllTasksLostCallback = null;
+    private Optional<Function<Set<StreamsAssignmentInterface.TaskId>, Optional<Exception>>> onTasksRevokedCallback = Optional.empty();
+    private Optional<Function<Assignment, Optional<Exception>>> onTasksAssignedCallback = Optional.empty();
+    private Optional<Supplier<Optional<Exception>>> onAllTasksLostCallback = Optional.empty();
 
     private final StreamsRebalanceEventProcessor streamsRebalanceEventProcessor;
 
@@ -316,19 +316,18 @@ public class StreamsAssignmentInterface {
         public void process(final BackgroundEvent event) {
             switch (event.type()) {
                 case ERROR:
-                    process((ErrorEvent) event);
-                    break;
+                    throw ((ErrorEvent) event).error();
 
                 case STREAMS_ON_TASKS_REVOKED_CALLBACK_NEEDED:
-                    process((StreamsOnTasksRevokedCallbackNeededEvent) event);
+                    processStreamsOnTasksRevokedCallbackNeededEvent((StreamsOnTasksRevokedCallbackNeededEvent) event);
                     break;
 
                 case STREAMS_ON_TASKS_ASSIGNED_CALLBACK_NEEDED:
-                    process((StreamsOnTasksAssignedCallbackNeededEvent) event);
+                    processStreamsOnTasksAssignedCallbackNeededEvent((StreamsOnTasksAssignedCallbackNeededEvent) event);
                     break;
 
                 case STREAMS_ON_ALL_TASKS_LOST_CALLBACK_NEEDED:
-                    process((StreamsOnAllTasksLostCallbackNeededEvent) event);
+                    processStreamsOnAllTasksLostCallbackNeededEvent((StreamsOnAllTasksLostCallbackNeededEvent) event);
                     break;
 
                 default:
@@ -337,11 +336,7 @@ public class StreamsAssignmentInterface {
             }
         }
 
-        private void process(final ErrorEvent event) {
-            throw event.error();
-        }
-
-        private void process(final StreamsOnTasksRevokedCallbackNeededEvent event) {
+        private void processStreamsOnTasksRevokedCallbackNeededEvent(final StreamsOnTasksRevokedCallbackNeededEvent event) {
             StreamsOnTasksRevokedCallbackCompletedEvent invokedEvent = invokeOnTasksRevokedCallback(event.activeTasksToRevoke(), event.future());
             applicationEventHandler.add(invokedEvent);
             if (invokedEvent.error().isPresent()) {
@@ -349,7 +344,7 @@ public class StreamsAssignmentInterface {
             }
         }
 
-        private void process(final StreamsOnTasksAssignedCallbackNeededEvent event) {
+        private void processStreamsOnTasksAssignedCallbackNeededEvent(final StreamsOnTasksAssignedCallbackNeededEvent event) {
             StreamsOnTasksAssignedCallbackCompletedEvent invokedEvent = invokeOnTasksAssignedCallback(event.assignment(), event.future());
             applicationEventHandler.add(invokedEvent);
             if (invokedEvent.error().isPresent()) {
@@ -357,7 +352,7 @@ public class StreamsAssignmentInterface {
             }
         }
 
-        private void process(final StreamsOnAllTasksLostCallbackNeededEvent event) {
+        private void processStreamsOnAllTasksLostCallbackNeededEvent(final StreamsOnAllTasksLostCallbackNeededEvent event) {
             StreamsOnAllTasksLostCallbackCompletedEvent invokedEvent = invokeOnAllTasksLostCallback(event.future());
             applicationEventHandler.add(invokedEvent);
             if (invokedEvent.error().isPresent()) {

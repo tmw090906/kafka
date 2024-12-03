@@ -1448,7 +1448,7 @@ public class StreamThreadTest {
             null,
             HANDLER,
             null,
-            null,
+            Optional.empty(),
             null).updateThreadMetadata(adminClientId(CLIENT_ID));
 
         final StreamsException thrown = assertThrows(StreamsException.class, thread::run);
@@ -2675,7 +2675,7 @@ public class StreamThreadTest {
             null,
             HANDLER,
             null,
-            null,
+            Optional.empty(),
             null) {
             @Override
             void runOnceWithProcessingThreads() {
@@ -2734,7 +2734,7 @@ public class StreamThreadTest {
             null,
             HANDLER,
             null,
-            null,
+            Optional.empty(),
             null) {
             @Override
             void runOnceWithProcessingThreads() {
@@ -2802,7 +2802,7 @@ public class StreamThreadTest {
             null,
             HANDLER,
             null,
-            null,
+            Optional.empty(),
             null) {
             @Override
             void runOnceWithProcessingThreads() {
@@ -2866,7 +2866,7 @@ public class StreamThreadTest {
             null,
             HANDLER,
             null,
-            null,
+            Optional.empty(),
             null) {
             @Override
             void runOnceWithProcessingThreads() {
@@ -2927,7 +2927,7 @@ public class StreamThreadTest {
             null,
             HANDLER,
             null,
-            null,
+            Optional.empty(),
             null) {
             @Override
             void runOnceWithProcessingThreads() {
@@ -3161,7 +3161,7 @@ public class StreamThreadTest {
             null,
             HANDLER,
             null,
-            null,
+            Optional.empty(),
             null);
         final MetricName testMetricName = new MetricName("test_metric", "", "", new HashMap<>());
         final Metric testMetric = new KafkaMetric(
@@ -3218,7 +3218,7 @@ public class StreamThreadTest {
             null,
             (e, b) -> { },
             null,
-            null,
+            Optional.empty(),
             null) {
             @Override
             void runOnceWithProcessingThreads() {
@@ -3598,7 +3598,7 @@ public class StreamThreadTest {
             null,
             null,
             null,
-            null,
+            Optional.empty(),
             null);
     }
 
@@ -3720,7 +3720,7 @@ public class StreamThreadTest {
             null,
             HANDLER,
             null,
-            null,
+            Optional.empty(),
             null);
     }
     

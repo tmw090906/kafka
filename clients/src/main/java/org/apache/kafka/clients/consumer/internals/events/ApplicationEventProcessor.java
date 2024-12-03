@@ -669,7 +669,7 @@ public class ApplicationEventProcessor implements EventProcessor<ApplicationEven
     }
 
     private void process(final StreamsOnTasksRevokedCallbackCompletedEvent event) {
-        if (!requestManagers.streamsMembershipManager.isPresent()) {
+        if (requestManagers.streamsMembershipManager.isEmpty()) {
             log.warn("An internal error occurred; the Streams membership manager was not present, so the notification " +
                 "of the onTasksRevoked callback execution could not be sent");
             return;
@@ -678,7 +678,7 @@ public class ApplicationEventProcessor implements EventProcessor<ApplicationEven
     }
 
     private void process(final StreamsOnTasksAssignedCallbackCompletedEvent event) {
-        if (!requestManagers.streamsMembershipManager.isPresent()) {
+        if (requestManagers.streamsMembershipManager.isEmpty()) {
             log.warn("An internal error occurred; the Streams membership manager was not present, so the notification " +
                 "of the onTasksAssigned callback execution could not be sent");
             return;
@@ -687,7 +687,7 @@ public class ApplicationEventProcessor implements EventProcessor<ApplicationEven
     }
 
     private void process(final StreamsOnAllTasksLostCallbackCompletedEvent event) {
-        if (!requestManagers.streamsMembershipManager.isPresent()) {
+        if (requestManagers.streamsMembershipManager.isEmpty()) {
             log.warn("An internal error occurred; the Streams membership manager was not present, so the notification " +
                 "of the onAllTasksLost callback execution could not be sent");
             return;

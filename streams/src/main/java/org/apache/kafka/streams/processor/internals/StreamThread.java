@@ -352,7 +352,7 @@ public class StreamThread extends Thread implements ProcessingThread {
     private final Queue<StreamsException> nonFatalExceptionsToHandle;
 
     // These are used only with the Streams Rebalance Protocol client
-    private final StreamsAssignmentInterface streamsAssignmentInterface;
+    private final Optional<StreamsAssignmentInterface> streamsAssignmentInterface;
     private final StreamsMetadataState streamsMetadataState;
 
     // These are used to signal from outside the stream thread, but the variables themselves are internal to the thread
@@ -491,23 +491,28 @@ public class StreamThread extends Thread implements ProcessingThread {
         }
 
         final Consumer<byte[], byte[]> mainConsumer;
-        final StreamsAssignmentInterface streamsAssignmentInterface;
+        final Optional<StreamsAssignmentInterface> streamsAssignmentInterface;
         if (config.getString(StreamsConfig.GROUP_PROTOCOL_CONFIG).equalsIgnoreCase(GroupProtocol.STREAMS.name)) {
             if (topologyMetadata.hasNamedTopologies()) {
                 throw new IllegalStateException("Named topologies and the CONSUMER protocol cannot be used at the same time.");
             }
             log.info("Streams rebalance protocol enabled");
 
-            streamsAssignmentInterface =
-                initAssignmentInterface(processId,
-                config,
-                parseHostInfo(config.getString(StreamsConfig.APPLICATION_SERVER_CONFIG)),
-                topologyMetadata);
-
-            mainConsumer = clientSupplier.getStreamsRebalanceProtocolConsumer(consumerConfigs, streamsAssignmentInterface);
+            streamsAssignmentInterface = Optional.of(
+                initAssignmentInterface(
+                    processId,
+                    config,
+                    parseHostInfo(config.getString(StreamsConfig.APPLICATION_SERVER_CONFIG)),
+                    topologyMetadata
+                )
+            );
+            mainConsumer = clientSupplier.getStreamsRebalanceProtocolConsumer(
+                consumerConfigs,
+                streamsAssignmentInterface.get()
+            );
         } else {
             mainConsumer = clientSupplier.getConsumer(consumerConfigs);
-            streamsAssignmentInterface = null;
+            streamsAssignmentInterface = Optional.empty();
         }
 
         taskManager.setMainConsumer(mainConsumer);
@@ -693,7 +698,7 @@ public class StreamThread extends Thread implements ProcessingThread {
                         final Runnable shutdownErrorHook,
                         final BiConsumer<Throwable, Boolean> streamsUncaughtExceptionHandler,
                         final java.util.function.Consumer<Long> cacheResizer,
-                        final StreamsAssignmentInterface streamsAssignmentInterface,
+                        final Optional<StreamsAssignmentInterface> streamsAssignmentInterface,
                         final StreamsMetadataState streamsMetadataState) {
         super(threadId);
         this.stateLock = new Object();
@@ -716,11 +721,11 @@ public class StreamThread extends Thread implements ProcessingThread {
         this.streamsUncaughtExceptionHandler = streamsUncaughtExceptionHandler;
         this.cacheResizer = cacheResizer;
         this.streamsAssignmentInterface = streamsAssignmentInterface;
-        if (streamsAssignmentInterface != null) {
-            streamsAssignmentInterface.setOnTasksRevokedCallback(this::onTasksRevoked);
-            streamsAssignmentInterface.setOnTasksAssignedCallback(this::onTasksAssigned);
-            streamsAssignmentInterface.setOnAllTasksLostCallback(this::onAllTasksLost);
-        }
+        streamsAssignmentInterface.ifPresent(assignmentInterface -> {
+            assignmentInterface.setOnTasksRevokedCallback(this::onTasksRevoked);
+            assignmentInterface.setOnTasksAssignedCallback(this::onTasksAssigned);
+            assignmentInterface.setOnAllTasksLostCallback(this::onAllTasksLost);
+        });
         this.streamsMetadataState = streamsMetadataState;
 
         // The following sensors are created here but their references are not stored in this object, since within
@@ -1391,14 +1396,15 @@ public class StreamThread extends Thread implements ProcessingThread {
     }
 
     public void maybeHandleAssignmentFromStreamsRebalanceProtocol() {
-        if (streamsAssignmentInterface != null) {
+        if (streamsAssignmentInterface.isPresent()) {
 
-            if (streamsAssignmentInterface.shutdownRequested()) {
+            if (streamsAssignmentInterface.get().shutdownRequested()) {
                 assignmentErrorCode.set(AssignorError.SHUTDOWN_REQUESTED.code());
             }
 
             // Process metadata from Streams Rebalance Protocol
-            final Map<StreamsAssignmentInterface.HostInfo, List<TopicPartition>> partitionsByEndpoint = streamsAssignmentInterface.partitionsByHost.get();
+            final Map<StreamsAssignmentInterface.HostInfo, List<TopicPartition>> partitionsByEndpoint =
+                streamsAssignmentInterface.get().partitionsByHost.get();
             final Map<HostInfo, Set<TopicPartition>> convertedHostInfoMap = new HashMap<>();
             partitionsByEndpoint.forEach((hostInfo, topicPartitions) ->
                 convertedHostInfoMap.put(new HostInfo(hostInfo.host, hostInfo.port), new HashSet<>(topicPartitions)));
@@ -1409,7 +1415,7 @@ public class StreamThread extends Thread implements ProcessingThread {
             );
 
             // Process assignment from Streams Rebalance Protocol
-            streamsAssignmentInterface.processStreamsRebalanceEvents();
+            streamsAssignmentInterface.get().processStreamsRebalanceEvents();
         }
     }
 
@@ -1488,7 +1494,7 @@ public class StreamThread extends Thread implements ProcessingThread {
         return taskIdStream
             .collect(Collectors.toMap(
                 this::toTaskId,
-                task -> toTopicPartitions(task, streamsAssignmentInterface.subtopologyMap().get(task.subtopologyId()))
+                task -> toTopicPartitions(task, streamsAssignmentInterface.get().subtopologyMap().get(task.subtopologyId()))
             ));
     }
 
