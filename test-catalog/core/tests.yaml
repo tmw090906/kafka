@@ -1451,6 +1451,7 @@ kafka.coordinator.transaction.TransactionStateManagerTest:
 - testLoadAndRemoveTransactionsForPartition
 - testLoadTransactionMetadataContainingSegmentEndingWithEmptyBatch
 - testLoadTransactionMetadataWithCorruptedLog
+- testMakeFollowerLoadingPartition
 - testPartitionLoadMetric
 - testPendingStateNotResetOnRetryAppend
 - testSuccessfulReimmigration
