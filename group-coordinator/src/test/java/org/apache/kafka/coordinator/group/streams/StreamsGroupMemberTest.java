@@ -340,6 +340,9 @@ public class StreamsGroupMemberTest {
             .setAssignedWarmupTasks(
                 mkMap(mkEntry(subTopology3, new HashSet<>(assignedTasks3)))
             )
+            .setUserEndpoint(
+                new StreamsGroupMemberMetadataValue.Endpoint().setHost("host").setPort(9090)
+            )
             .build();
 
         StreamsGroupDescribeResponseData.Member actual = member.asStreamsGroupDescribeMember(targetAssignment);
@@ -376,8 +379,9 @@ public class StreamsGroupMemberTest {
                     .setWarmupTasks(Collections.singletonList(new StreamsGroupDescribeResponseData.TaskIds()
                         .setSubtopologyId(subTopology3)
                         .setPartitions(assignedTasks1)))
-            );
-        // TODO: Add TaskOffsets
+            )
+            .setUserEndpoint(new StreamsGroupDescribeResponseData.Endpoint().setHost("host").setPort(9090));
+        // TODO: TaskOffset, TaskEndOffset, IsClassic are to be implemented.
 
         assertEquals(expected, actual);
     }

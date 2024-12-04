@@ -21,7 +21,7 @@
   "flexibleVersions": "0+",
   "fields": [
     { "name": "InstanceId", "versions": "0+", "nullableVersions": "0+", "type": "string",
-      "about": "The (optional) instance id." },
+      "about": "The (optional) instance ID for static membership." },
     { "name": "RackId", "versions": "0+", "nullableVersions": "0+", "type": "string",
       "about": "The (optional) rack id." },
     { "name": "ClientId", "versions": "0+", "type": "string",
@@ -36,7 +36,7 @@
 
     { "name": "ProcessId", "type": "string", "versions": "0+",
       "about": "Identity of the streams instance that may have multiple consumers." },
-    { "name": "UserEndpoint", "type": "Endpoint", "nullableVersions": "0+", "versions": "0+",
+    { "name": "UserEndpoint", "type": "Endpoint", "versions": "0+", "nullableVersions": "0+", "default": "null",
       "about": "User-defined endpoint for running interactive queries on this instance." },
     { "name": "ClientTags", "type": "[]KeyValue", "versions": "0+",
       "about": "Used for rack-aware assignment algorithm." }

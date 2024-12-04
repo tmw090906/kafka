@@ -621,9 +621,14 @@ public class StreamsGroupMember {
                     .setValue(entry.getValue())
             ).collect(Collectors.toList()))
             .setProcessId(processId)
-            .setTopologyEpoch(topologyEpoch);
-        // TODO: TaskOffset and TaskEndOffset are missing.
-
+            .setTopologyEpoch(topologyEpoch)
+            .setUserEndpoint(
+                userEndpoint == null ? null :
+                    new StreamsGroupDescribeResponseData.Endpoint()
+                        .setHost(userEndpoint.host())
+                        .setPort(userEndpoint.port())
+            );
+        // TODO: TaskOffset, TaskEndOffset, IsClassic are to be implemented.
     }
 
     private static List<StreamsGroupDescribeResponseData.TaskIds> taskIdsFromMap(
