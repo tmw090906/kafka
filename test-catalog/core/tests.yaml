@@ -2437,6 +2437,7 @@ kafka.server.ConfigAdminManagerTest:
 - testValidateResourceNameIsCurrentNodeId
 kafka.server.ConsumerGroupDescribeRequestTest:
 - testConsumerGroupDescribeWhenFeatureFlagNotEnabled
+- testConsumerGroupDescribeWithMigrationMember
 - testConsumerGroupDescribeWithNewGroupCoordinator
 kafka.server.ConsumerGroupHeartbeatRequestTest:
 - testConsumerGroupHeartbeatFailureIfMemberIdMissingForVersionsAbove0
