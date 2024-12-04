@@ -841,6 +841,8 @@ public class StreamsConfig extends AbstractConfig {
     public static final String WINDOW_STORE_CHANGE_LOG_ADDITIONAL_RETENTION_MS_CONFIG = "windowstore.changelog.additional.retention.ms";
     private static final String WINDOW_STORE_CHANGE_LOG_ADDITIONAL_RETENTION_MS_DOC = "Added to a windows maintainMs to ensure data is not deleted from the log prematurely. Allows for clock drift. Default is 1 day";
 
+    private static final String[] IGNORED_UNPREFIXED_CONSUMER_CONFIGS =
+        new String[] {ConsumerConfig.GROUP_PROTOCOL_CONFIG};
     private static final String[] NON_CONFIGURABLE_CONSUMER_DEFAULT_CONFIGS =
         new String[] {ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, ConsumerConfig.GROUP_PROTOCOL_CONFIG};
     private static final String[] NON_CONFIGURABLE_CONSUMER_EOS_CONFIGS =
@@ -1490,6 +1492,11 @@ public class StreamsConfig extends AbstractConfig {
         }
         verifyTopologyOptimizationConfigs(getString(TOPOLOGY_OPTIMIZATION_CONFIG));
         verifyClientTelemetryConfigs();
+
+        if (doLog && getString(GROUP_PROTOCOL_CONFIG).equals(GroupProtocol.STREAMS.name().toLowerCase(Locale.ROOT))) {
+            log.warn("The streams rebalance protocol is still in development and should not be used in production. "
+                + "Please set group.protocol=classic (default) in all production use cases.");
+        }
     }
 
     private void verifyEOSTransactionTimeoutCompatibility() {
@@ -1610,7 +1617,8 @@ public class StreamsConfig extends AbstractConfig {
     }
 
     private Map<String, Object> getCommonConsumerConfigs() {
-        final Map<String, Object> clientProvidedProps = getClientPropsWithPrefix(CONSUMER_PREFIX, ConsumerConfig.configNames());
+        final Map<String, Object> clientProvidedProps = getClientPropsWithPrefix(CONSUMER_PREFIX, ConsumerConfig.configNames(),
+            IGNORED_UNPREFIXED_CONSUMER_CONFIGS);
 
         checkIfUnexpectedUserSpecifiedConsumerConfig(clientProvidedProps, NON_CONFIGURABLE_CONSUMER_DEFAULT_CONFIGS);
         checkIfUnexpectedUserSpecifiedConsumerConfig(clientProvidedProps, NON_CONFIGURABLE_CONSUMER_EOS_CONFIGS);
@@ -1923,10 +1931,18 @@ public class StreamsConfig extends AbstractConfig {
     }
 
     private Map<String, Object> getClientPropsWithPrefix(final String prefix,
-                                                         final Set<String> configNames) {
-        final Map<String, Object> props = clientProps(configNames, originals());
+                                                         final Set<String> configNames,
+                                                         final String[] ignoreFromGlobal) {
+        final Set<String> unprefixedConfigs = new HashSet<>(configNames);
+        Arrays.asList(ignoreFromGlobal).forEach(unprefixedConfigs::remove);
+        final Map<String, Object> props = clientProps(unprefixedConfigs, originals());
         props.putAll(originalsWithPrefix(prefix));
         return props;
+    }
+
+    private Map<String, Object> getClientPropsWithPrefix(final String prefix,
+                                                         final Set<String> configNames) {
+        return getClientPropsWithPrefix(prefix, configNames, new String[0]);
     }
 
     /**

@@ -1524,6 +1524,32 @@ public class StreamsConfigTest {
         }
     }
 
+    @Test
+    public void shouldHaveGroupConfigClassicDefault() {
+        streamsConfig = new StreamsConfig(props);
+        assertEquals("classic", streamsConfig.getString(StreamsConfig.GROUP_PROTOCOL_CONFIG));
+    }
+
+    @Test
+    public void shouldLogWarningWhenStreamsProtocolIsUsed() {
+        props.put(StreamsConfig.GROUP_PROTOCOL_CONFIG, "streams");
+        try (LogCaptureAppender logCaptureAppender = LogCaptureAppender.createAndRegister(StreamsConfig.class)) {
+            logCaptureAppender.setClassLogger(StreamsConfig.class, Level.WARN);
+            streamsConfig = new StreamsConfig(props);
+            assertTrue(logCaptureAppender.getMessages().contains("The streams rebalance protocol is still in development and "
+                + "should not be used in production. Please set group.protocol=classic (default) in all production use cases."));
+        }
+        assertEquals("streams", streamsConfig.getString(StreamsConfig.GROUP_PROTOCOL_CONFIG));
+    }
+
+    @Test
+    public void shouldNotApplyGroupConfigToConsumers() {
+        props.put(StreamsConfig.GROUP_PROTOCOL_CONFIG, "streams");
+        streamsConfig = new StreamsConfig(props);
+        assertEquals("classic", streamsConfig.getMainConsumerConfigs("a", "b", threadIdx).get("group.protocol"));
+        assertEquals("classic", streamsConfig.getRestoreConsumerConfigs(clientId).get("group.protocol"));
+    }
+
     @SuppressWarnings("deprecation")
     @Test
     public void shouldUseOldProductionExceptionHandlerWhenOnlyOldConfigIsSet() {
