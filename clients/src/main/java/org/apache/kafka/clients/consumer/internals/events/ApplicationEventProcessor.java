@@ -471,12 +471,15 @@ public class ApplicationEventProcessor implements EventProcessor<ApplicationEven
     }
 
     private void process(final LeaveGroupOnCloseEvent event) {
-        if (requestManagers.consumerMembershipManager.isEmpty())
-            return;
-
-        log.debug("Signal the ConsumerMembershipManager to leave the consumer group since the consumer is closing");
-        CompletableFuture<Void> future = requestManagers.consumerMembershipManager.get().leaveGroupOnClose();
-        future.whenComplete(complete(event.future()));
+        if (requestManagers.consumerMembershipManager.isPresent()) {
+            CompletableFuture<Void> future = requestManagers.consumerMembershipManager.get().leaveGroupOnClose();
+            future.whenComplete(complete(event.future()));
+            log.debug("Signal the ConsumerMembershipManager to leave the consumer group since the consumer is closing");
+        } else if (requestManagers.streamsMembershipManager.isPresent()) {
+            CompletableFuture<Void> future = requestManagers.streamsMembershipManager.get().leaveGroupOnClose();
+            future.whenComplete(complete(event.future()));
+            log.debug("Signal the StreamsMembershipManager to leave the Streams group since the member is closing");
+        }
     }
 
     /**

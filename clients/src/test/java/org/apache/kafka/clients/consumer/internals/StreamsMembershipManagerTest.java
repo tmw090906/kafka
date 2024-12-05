@@ -17,7 +17,6 @@
 package org.apache.kafka.clients.consumer.internals;
 
 import org.apache.kafka.clients.consumer.internals.events.BackgroundEvent;
-import org.apache.kafka.clients.consumer.internals.events.BackgroundEventHandler;
 import org.apache.kafka.clients.consumer.internals.events.StreamsOnAllTasksLostCallbackCompletedEvent;
 import org.apache.kafka.clients.consumer.internals.events.StreamsOnTasksAssignedCallbackCompletedEvent;
 import org.apache.kafka.clients.consumer.internals.events.StreamsOnTasksAssignedCallbackNeededEvent;
@@ -35,8 +34,6 @@ import org.apache.kafka.common.utils.Time;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -49,6 +46,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 
 import static org.apache.kafka.common.utils.Utils.mkEntry;
 import static org.apache.kafka.common.utils.Utils.mkMap;
@@ -89,11 +87,7 @@ public class StreamsMembershipManagerTest {
     @Mock
     private StreamsAssignmentInterface streamsAssignmentInterface;
 
-    @Captor
-    private ArgumentCaptor<StreamsOnTasksAssignedCallbackNeededEvent> onAssignmentCallbackNeededEventCaptor;
-
     private Queue<BackgroundEvent> backgroundEventQueue = new LinkedList<>();
-    private BackgroundEventHandler backgroundEventHandler = new BackgroundEventHandler(backgroundEventQueue);
 
     @BeforeEach
     public void setup() {
@@ -355,7 +349,16 @@ public class StreamsMembershipManagerTest {
 
     @Test
     public void testLeaveGroupWhenNotInGroup() {
-        final CompletableFuture<Void> future = membershipManager.leaveGroup();
+        testLeaveGroupWhenNotInGroup(membershipManager::leaveGroup);
+    }
+
+    @Test
+    public void testLeaveGroupOnCloseWhenNotInGroup() {
+        testLeaveGroupWhenNotInGroup(membershipManager::leaveGroupOnClose);
+    }
+
+    private void testLeaveGroupWhenNotInGroup(final Supplier<CompletableFuture<Void>> leaveGroup) {
+        final CompletableFuture<Void> future = leaveGroup.get();
 
         assertFalse(membershipManager.isLeavingGroup());
         assertTrue(future.isDone());
@@ -367,12 +370,21 @@ public class StreamsMembershipManagerTest {
 
     @Test
     public void testLeaveGroupWhenNotInGroupAndFenced() {
+        testLeaveGroupOnCloseWhenNotInGroupAndFenced(membershipManager::leaveGroup);
+    }
+
+    @Test
+    public void testLeaveGroupOnCloseWhenNotInGroupAndFenced() {
+        testLeaveGroupOnCloseWhenNotInGroupAndFenced(membershipManager::leaveGroupOnClose);
+    }
+
+    private void testLeaveGroupOnCloseWhenNotInGroupAndFenced(final Supplier<CompletableFuture<Void>> leaveGroup) {
         final CompletableFuture<Void> onAllTasksLostCallbackExecuted = new CompletableFuture<>();
         when(streamsAssignmentInterface.requestOnAllTasksLostCallbackInvocation())
             .thenReturn(onAllTasksLostCallbackExecuted);
         joining();
         fenced();
-        final CompletableFuture<Void> future = membershipManager.leaveGroup();
+        final CompletableFuture<Void> future = leaveGroup.get();
 
         assertFalse(membershipManager.isLeavingGroup());
         assertTrue(future.isDone());
@@ -405,14 +417,49 @@ public class StreamsMembershipManagerTest {
         verifyInStatePrepareLeaving(membershipManager);
         final CompletableFuture<Void> onGroupLeftBeforeRevocationCallback = membershipManager.leaveGroup();
         assertEquals(onGroupLeft, onGroupLeftBeforeRevocationCallback);
+        final CompletableFuture<Void> onGroupLeftOnCloseBeforeRevocationCallback = membershipManager.leaveGroupOnClose();
+        assertEquals(onGroupLeft, onGroupLeftOnCloseBeforeRevocationCallback);
         onTasksRevokedCallbackExecuted.complete(null);
         verify(subscriptionState).unsubscribe();
         assertFalse(onGroupLeft.isDone());
         verifyInStateLeaving(membershipManager);
         final CompletableFuture<Void> onGroupLeftAfterRevocationCallback = membershipManager.leaveGroup();
         assertEquals(onGroupLeft, onGroupLeftAfterRevocationCallback);
-        membershipManager.transitionToUnsubscribeIfLeaving();
+        membershipManager.onHeartbeatRequestGenerated();
         verifyInStateUnsubscribed(membershipManager);
+        membershipManager.onHeartbeatSuccess(makeHeartbeatResponse(SUB_TOPOLOGY_ID_0, List.of(PARTITION_0)));
+        assertTrue(onGroupLeft.isDone());
+        assertFalse(onGroupLeft.isCompletedExceptionally());
+    }
+
+    @Test
+    public void testLeaveGroupOnCloseWhenInGroupWithAssignment() {
+        setupStreamsAssignmentInterfaceWithOneSubtopologyOneSourceTopic(SUB_TOPOLOGY_ID_0, TOPIC_0);
+        final Set<StreamsAssignmentInterface.TaskId> activeTasks =
+            Set.of(new StreamsAssignmentInterface.TaskId(SUB_TOPOLOGY_ID_0, PARTITION_0));
+        final CompletableFuture<Void> onTasksAssignedCallbackExecutedSetup = new CompletableFuture<>();
+        when(streamsAssignmentInterface.requestOnTasksAssignedCallbackInvocation(makeTaskAssignment(activeTasks)))
+            .thenReturn(onTasksAssignedCallbackExecutedSetup);
+        joining();
+        reconcile(makeHeartbeatResponse(SUB_TOPOLOGY_ID_0, List.of(PARTITION_0)));
+        acknowledging(onTasksAssignedCallbackExecutedSetup);
+
+        final CompletableFuture<Void> onGroupLeft = membershipManager.leaveGroupOnClose();
+
+        assertFalse(onGroupLeft.isDone());
+        verifyInStateLeaving(membershipManager);
+        verify(subscriptionState).unsubscribe();
+        verify(streamsAssignmentInterface, never()).requestOnTasksRevokedCallbackInvocation(any());
+        final CompletableFuture<Void> onGroupLeftBeforeHeartbeatRequestGenerated = membershipManager.leaveGroup();
+        assertEquals(onGroupLeft, onGroupLeftBeforeHeartbeatRequestGenerated);
+        final CompletableFuture<Void> onGroupLeftOnCloseBeforeHeartbeatRequestGenerated = membershipManager.leaveGroupOnClose();
+        assertEquals(onGroupLeft, onGroupLeftOnCloseBeforeHeartbeatRequestGenerated);
+        assertFalse(onGroupLeft.isDone());
+        membershipManager.onHeartbeatRequestGenerated();
+        verifyInStateUnsubscribed(membershipManager);
+        membershipManager.onHeartbeatSuccess(makeHeartbeatResponse(SUB_TOPOLOGY_ID_0, List.of(PARTITION_0)));
+        assertTrue(onGroupLeft.isDone());
+        assertFalse(onGroupLeft.isCompletedExceptionally());
     }
 
     @Test

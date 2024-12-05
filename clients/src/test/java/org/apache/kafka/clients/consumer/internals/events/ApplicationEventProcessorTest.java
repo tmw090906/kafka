@@ -25,6 +25,7 @@ import org.apache.kafka.clients.consumer.internals.CommitRequestManager;
 import org.apache.kafka.clients.consumer.internals.ConsumerHeartbeatRequestManager;
 import org.apache.kafka.clients.consumer.internals.ConsumerMembershipManager;
 import org.apache.kafka.clients.consumer.internals.ConsumerMetadata;
+import org.apache.kafka.clients.consumer.internals.ConsumerUtils;
 import org.apache.kafka.clients.consumer.internals.CoordinatorRequestManager;
 import org.apache.kafka.clients.consumer.internals.FetchRequestManager;
 import org.apache.kafka.clients.consumer.internals.MockRebalanceListener;
@@ -63,8 +64,10 @@ import static org.apache.kafka.clients.consumer.internals.events.CompletableEven
 import static org.apache.kafka.test.TestUtils.assertFutureThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -609,6 +612,69 @@ public class ApplicationEventProcessorTest {
         setupProcessorWithStreamsMembershipManager();
         processor.process(event);
         verify(streamsMembershipManager).onAllTasksLostCallbackCompleted(event);
+    }
+
+
+    @Test
+    public void testLeaveOnCloseWithStreamsMembershipManager() {
+        LeaveGroupOnCloseEvent event = new LeaveGroupOnCloseEvent(ConsumerUtils.DEFAULT_CLOSE_TIMEOUT_MS);
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        when(streamsMembershipManager.leaveGroupOnClose()).thenReturn(future);
+
+        setupProcessorWithStreamsMembershipManager();
+        processor.process(event);
+        verifyLeaveOnClose(event, future);
+    }
+
+    @Test
+    public void testLeaveOnCloseCompletesExceptionallyWithStreamsMembershipManager() {
+        LeaveGroupOnCloseEvent event = new LeaveGroupOnCloseEvent(ConsumerUtils.DEFAULT_CLOSE_TIMEOUT_MS);
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        when(streamsMembershipManager.leaveGroupOnClose()).thenReturn(future);
+
+        setupProcessorWithStreamsMembershipManager();
+        processor.process(event);
+        verifyLeaveOnCloseCompletesExceptionally(event, future);
+    }
+
+    @Test
+    public void testLeaveOnCloseWithConsumerMembershipManager() {
+        LeaveGroupOnCloseEvent event = new LeaveGroupOnCloseEvent(ConsumerUtils.DEFAULT_CLOSE_TIMEOUT_MS);
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        when(membershipManager.leaveGroupOnClose()).thenReturn(future);
+
+        setupProcessor(true);
+        processor.process(event);
+        verifyLeaveOnClose(event, future);
+    }
+
+    @Test
+    public void testLeaveOnCloseCompletesExceptionallyWithConsumerMembershipManager() {
+        LeaveGroupOnCloseEvent event = new LeaveGroupOnCloseEvent(ConsumerUtils.DEFAULT_CLOSE_TIMEOUT_MS);
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        when(membershipManager.leaveGroupOnClose()).thenReturn(future);
+
+        setupProcessor(true);
+        processor.process(event);
+        verifyLeaveOnCloseCompletesExceptionally(event, future);
+    }
+
+    private void verifyLeaveOnClose(LeaveGroupOnCloseEvent event, CompletableFuture<Void> future) {
+        assertFalse(event.future().isDone());
+        future.complete(null);
+        assertTrue(event.future().isDone());
+        assertFalse(event.future().isCompletedExceptionally());
+    }
+
+    private void verifyLeaveOnCloseCompletesExceptionally(LeaveGroupOnCloseEvent event, CompletableFuture<Void> future) {
+        assertFalse(event.future().isDone());
+        RuntimeException exception = new RuntimeException("Nobody expects the Spanish Inquisition!");
+        future.completeExceptionally(exception);
+        assertTrue(event.future().isDone());
+        assertTrue(event.future().isCompletedExceptionally());
+        ExecutionException thrown = assertThrows(ExecutionException.class, () -> event.future().get());
+        assertInstanceOf(RuntimeException.class, thrown.getCause());
+        assertEquals(exception.getMessage(), thrown.getCause().getMessage());
     }
 
     private List<NetworkClientDelegate.UnsentRequest> mockCommitResults() {

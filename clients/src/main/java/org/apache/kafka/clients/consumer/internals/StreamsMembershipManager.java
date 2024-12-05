@@ -243,7 +243,7 @@ public class StreamsMembershipManager implements RequestManager {
         }
         resetEpoch();
         transitionTo(MemberState.JOINING);
-        clearPendingTaskAssignment();
+        clearCurrentTaskAssignment();
     }
 
     private void transitionToSendingLeaveGroup(boolean dueToExpiredPollTimer) {
@@ -271,7 +271,7 @@ public class StreamsMembershipManager implements RequestManager {
 
     private void finalizeLeaving() {
         updateMemberEpoch(StreamsGroupHeartbeatRequest.LEAVE_GROUP_MEMBER_EPOCH);
-        clearPendingTaskAssignment();
+        clearCurrentTaskAssignment();
     }
 
     private void transitionToStale() {
@@ -373,7 +373,7 @@ public class StreamsMembershipManager implements RequestManager {
         }
     }
 
-    private void clearPendingTaskAssignment() {
+    private void clearCurrentTaskAssignment() {
         currentAssignment = LocalAssignment.NONE;
     }
 
@@ -583,14 +583,35 @@ public class StreamsMembershipManager implements RequestManager {
     }
 
     /**
+     * Leaves the group when the member closes.
+     *
+     * <p>
+     * This method does the following:
+     * <ol>
+     *     <li>Transitions member state to {@link MemberState#PREPARE_LEAVING}.</li>
+     *     <li>Skips the invocation of the revocation callback or lost callback.</li>
+     *     <li>Clears the current and target assignment, unsubscribes from all topics and
+     *     transitions the member state to {@link MemberState#LEAVING}.</li>
+     * </ol>
+     * States {@link MemberState#PREPARE_LEAVING} and {@link MemberState#LEAVING} cause the heartbeat request manager
+     * to send a leave group heartbeat.
+     * </p>
+     *
+     * @return future that will complete when the heartbeat to leave the group has been sent out.
+     */
+    public CompletableFuture<Void> leaveGroupOnClose() {
+        return leaveGroup(true);
+    }
+
+    /**
      * Leaves the group.
      *
      * <p>
      * This method does the following:
      * <ol>
      *     <li>Transitions member state to {@link MemberState#PREPARE_LEAVING}.</li>
-     *     <li>Requests the invocation of the revocation callback.</li>
-     *     <li>Once the revocation callback completes, it clears the current and target assignment, unsubscribes from
+     *     <li>Requests the invocation of the revocation callback or lost callback.</li>
+     *     <li>Once the callback completes, it clears the current and target assignment, unsubscribes from
      *     all topics and transitions the member state to {@link MemberState#LEAVING}.</li>
      * </ol>
      * States {@link MemberState#PREPARE_LEAVING} and {@link MemberState#LEAVING} cause the heartbeat request manager
@@ -601,6 +622,10 @@ public class StreamsMembershipManager implements RequestManager {
      *         to leave the group has been sent out.
      */
     public CompletableFuture<Void> leaveGroup() {
+        return leaveGroup(false);
+    }
+
+    private CompletableFuture<Void> leaveGroup(final boolean isOnClose) {
         if (isNotInGroup()) {
             if (state == MemberState.FENCED) {
                 clearTaskAndPartitionAssignment();
@@ -615,16 +640,21 @@ public class StreamsMembershipManager implements RequestManager {
             return leaveGroupInProgress.get();
         }
 
+        transitionTo(MemberState.PREPARE_LEAVING);
         CompletableFuture<Void> onGroupLeft = new CompletableFuture<>();
         leaveGroupInProgress = Optional.of(onGroupLeft);
-        CompletableFuture<Void> onAllTasksRevokedCallbackExecuted = prepareLeaving();
-        onAllTasksRevokedCallbackExecuted.whenComplete((__, callbackError) -> leaving(callbackError));
+        if (!isOnClose) {
+            CompletableFuture<Void> onAllActiveTasksReleasedCallbackExecuted = releaseActiveTasks();
+            onAllActiveTasksReleasedCallbackExecuted
+                .whenComplete((__, callbackError) -> leavingAfterReleasingActiveTasks(callbackError));
+        } else {
+            leaving();
+        }
 
         return onGroupLeft;
     }
 
-    private CompletableFuture<Void> prepareLeaving() {
-        transitionTo(MemberState.PREPARE_LEAVING);
+    private CompletableFuture<Void> releaseActiveTasks() {
         if (memberEpoch > 0) {
             return revokeActiveTasks(toTaskIdSet(currentAssignment.activeTasks));
         } else {
@@ -632,7 +662,7 @@ public class StreamsMembershipManager implements RequestManager {
         }
     }
 
-    private void leaving(Throwable callbackError) {
+    private void leavingAfterReleasingActiveTasks(Throwable callbackError) {
         if (callbackError != null) {
             log.error("Member {} callback to revoke task assignment failed. It will proceed " +
                     "to clear its assignment and send a leave group heartbeat",
@@ -642,6 +672,10 @@ public class StreamsMembershipManager implements RequestManager {
                     "to clear its assignment and send a leave group heartbeat",
                 memberIdInfoForLog());
         }
+        leaving();
+    }
+
+    private void leaving() {
         clearTaskAndPartitionAssignment();
         subscriptionState.unsubscribe();
         transitionToSendingLeaveGroup(false);

@@ -103,7 +103,7 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
 
     @Override
     public NetworkClientDelegate.PollResult poll(long currentTimeMs) {
-        if (!coordinatorRequestManager.coordinator().isPresent() || membershipManager.shouldSkipHeartbeat()) {
+        if (coordinatorRequestManager.coordinator().isEmpty() || membershipManager.shouldSkipHeartbeat()) {
             membershipManager.transitionToUnsubscribeIfLeaving();
             return NetworkClientDelegate.PollResult.EMPTY;
         }
