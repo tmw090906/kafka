@@ -473,7 +473,7 @@ public class StreamsGroupHeartbeatRequestManager implements RequestManager {
             // GroupId - always sent
             data.setGroupId(membershipManager.groupId());
 
-            // MemberId - always sent, empty until it has been received from the coordinator
+            // MemberId - always sent, it will be generated at Streams Consumer startup
             data.setMemberId(membershipManager.memberId());
 
             // MemberEpoch - always sent

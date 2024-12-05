@@ -23,6 +23,7 @@ import org.apache.kafka.clients.consumer.internals.metrics.ConsumerRebalanceMetr
 import org.apache.kafka.clients.consumer.internals.metrics.RebalanceMetricsManager;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.message.StreamsGroupHeartbeatResponseData;
 import org.apache.kafka.common.metrics.Metrics;
 import org.apache.kafka.common.protocol.Errors;
@@ -148,7 +149,7 @@ public class StreamsMembershipManager implements RequestManager {
 
     private final String groupId;
 
-    private String memberId = "";
+    private final String memberId = Uuid.randomUuid().toString();
 
     private final Optional<String> groupInstanceId = Optional.empty();
 
@@ -249,12 +250,12 @@ public class StreamsMembershipManager implements RequestManager {
     private void transitionToSendingLeaveGroup(boolean dueToExpiredPollTimer) {
         if (state == MemberState.FATAL) {
             log.warn("Member {} with epoch {} won't send leave group request because it is in " +
-                "FATAL state", memberIdInfoForLog(), memberEpoch);
+                "FATAL state", memberId, memberEpoch);
             return;
         }
         if (state == MemberState.UNSUBSCRIBED) {
             log.warn("Member {} won't send leave group request because it is already out of the group.",
-                memberIdInfoForLog());
+                memberId);
             return;
         }
 
@@ -287,26 +288,26 @@ public class StreamsMembershipManager implements RequestManager {
             clearTaskAndPartitionAssignment();
             log.debug("Member {} sent leave group heartbeat and released its assignment. It will remain " +
                     "in {} state until the poll timer is reset, and it will then rejoin the group",
-                memberIdInfoForLog(), MemberState.STALE);
+                memberId, MemberState.STALE);
         });
     }
 
     public void transitionToFatal() {
         MemberState previousState = state;
         transitionTo(MemberState.FATAL);
-        log.error("Member {} with epoch {} transitioned to fatal state", memberIdInfoForLog(), memberEpoch);
+        log.error("Member {} with epoch {} transitioned to fatal state", memberId, memberEpoch);
         notifyEpochChange(Optional.empty());
 
         if (previousState == MemberState.UNSUBSCRIBED) {
             log.debug("Member {} with epoch {} got fatal error from the broker but it already " +
-                "left the group, so onTaskAssignment callback won't be triggered.", memberIdInfoForLog(), memberEpoch);
+                "left the group, so onTaskAssignment callback won't be triggered.", memberId, memberEpoch);
             return;
         }
 
         if (previousState == MemberState.LEAVING || previousState == MemberState.PREPARE_LEAVING) {
             log.info("Member {} with epoch {} was leaving the group with state {} when it got a " +
                 "fatal error from the broker. It will discard the ongoing leave and remain in " +
-                "fatal state.", memberIdInfoForLog(), memberEpoch, previousState);
+                "fatal state.", memberId, memberEpoch, previousState);
             maybeCompleteLeaveInProgress();
             return;
         }
@@ -325,7 +326,7 @@ public class StreamsMembershipManager implements RequestManager {
         if (state == MemberState.LEAVING) {
             log.warn("Heartbeat to leave group cannot be sent (most probably due to coordinator " +
                     "not known/available). Member {} with epoch {} will transition to {}.",
-                memberIdInfoForLog(), memberEpoch, MemberState.UNSUBSCRIBED);
+                memberId, memberEpoch, MemberState.UNSUBSCRIBED);
             transitionTo(MemberState.UNSUBSCRIBED);
             maybeCompleteLeaveInProgress();
         }
@@ -344,7 +345,7 @@ public class StreamsMembershipManager implements RequestManager {
             metricsManager.recordRebalanceStarted(time.milliseconds());
         }
 
-        log.info("Member {} with epoch {} transitioned from {} to {}.", memberIdInfoForLog(), memberEpoch, state, nextState);
+        log.info("Member {} with epoch {} transitioned from {} to {}.", memberId, memberEpoch, state, nextState);
         this.state = nextState;
     }
 
@@ -410,17 +411,17 @@ public class StreamsMembershipManager implements RequestManager {
             } else {
                 log.debug("Member {} with epoch {} transitioned to {} after a heartbeat was sent " +
                     "to ack a previous reconciliation. New assignments are ready to " +
-                    "be reconciled.", memberIdInfoForLog(), memberEpoch, MemberState.RECONCILING);
+                    "be reconciled.", memberId, memberEpoch, MemberState.RECONCILING);
                 transitionTo(MemberState.RECONCILING);
             }
         } else if (state == MemberState.LEAVING) {
             if (isPollTimerExpired) {
                 log.debug("Member {} with epoch {} generated the heartbeat to leave due to expired poll timer. It will " +
                     "remain stale (no heartbeat) until it rejoins the group on the next consumer " +
-                    "poll.", memberIdInfoForLog(), memberEpoch);
+                    "poll.", memberId, memberEpoch);
                 transitionToStale();
             } else {
-                log.debug("Member {} with epoch {} generated the heartbeat to leave the group.", memberIdInfoForLog(), memberEpoch);
+                log.debug("Member {} with epoch {} generated the heartbeat to leave the group.", memberId, memberEpoch);
                 transitionTo(MemberState.UNSUBSCRIBED);
             }
         }
@@ -444,8 +445,7 @@ public class StreamsMembershipManager implements RequestManager {
                 " so it's not a member of the group. ", memberId, state);
             return;
         }
-
-        memberId = responseData.memberId();
+        
         updateMemberEpoch(responseData.memberEpoch());
 
         final List<StreamsGroupHeartbeatResponseData.TaskIds> activeTasks = responseData.activeTasks();
@@ -485,7 +485,7 @@ public class StreamsMembershipManager implements RequestManager {
         // operation once the request completes, regardless of the response.
         if (state == MemberState.UNSUBSCRIBED && maybeCompleteLeaveInProgress()) {
             log.warn("Member {} with epoch {} received a failed response to the heartbeat to " +
-                "leave the group and completed the leave operation. ", memberIdInfoForLog(), memberEpoch);
+                "leave the group and completed the leave operation. ", memberId, memberEpoch);
         }
     }
 
@@ -497,7 +497,7 @@ public class StreamsMembershipManager implements RequestManager {
         if (state == MemberState.PREPARE_LEAVING) {
             log.info("Member {} with epoch {} got fenced but it is already preparing to leave " +
                 "the group, so it will stop sending heartbeat and won't attempt to send the " +
-                "leave request or rejoin.", memberIdInfoForLog(), memberEpoch);
+                "leave request or rejoin.", memberId, memberEpoch);
             finalizeLeaving();
             transitionTo(MemberState.UNSUBSCRIBED);
             maybeCompleteLeaveInProgress();
@@ -506,20 +506,20 @@ public class StreamsMembershipManager implements RequestManager {
 
         if (state == MemberState.LEAVING) {
             log.debug("Member {} with epoch {} got fenced before sending leave group heartbeat. " +
-                "It will not send the leave request and won't attempt to rejoin.", memberIdInfoForLog(), memberEpoch);
+                "It will not send the leave request and won't attempt to rejoin.", memberId, memberEpoch);
             transitionTo(MemberState.UNSUBSCRIBED);
             maybeCompleteLeaveInProgress();
             return;
         }
         if (state == MemberState.UNSUBSCRIBED) {
             log.debug("Member {} with epoch {} got fenced but it already left the group, so it " +
-                "won't attempt to rejoin.", memberIdInfoForLog(), memberEpoch);
+                "won't attempt to rejoin.", memberId, memberEpoch);
             return;
         }
         transitionTo(MemberState.FENCED);
         resetEpoch();
         log.debug("Member {} with epoch {} transitioned to {} state. It will release its " +
-            "assignment and rejoin the group.", memberIdInfoForLog(), memberEpoch, MemberState.FENCED);
+            "assignment and rejoin the group.", memberId, memberEpoch, MemberState.FENCED);
 
         CompletableFuture<Void> callbackResult = streamsAssignmentInterface.requestOnAllTasksLostCallbackInvocation();
         callbackResult.whenComplete((result, error) -> {
@@ -551,7 +551,7 @@ public class StreamsMembershipManager implements RequestManager {
         isPollTimerExpired = false;
         if (state == MemberState.STALE) {
             log.debug("Expired poll timer has been reset so stale member {} will rejoin the group " +
-                "when it completes releasing its previous assignment.", memberIdInfoForLog());
+                "when it completes releasing its previous assignment.", memberId);
             staleMemberAssignmentRelease.whenComplete((__, error) -> transitionToJoining());
         }
     }
@@ -636,7 +636,7 @@ public class StreamsMembershipManager implements RequestManager {
         }
 
         if (state == MemberState.PREPARE_LEAVING || state == MemberState.LEAVING) {
-            log.debug("Leave group operation already in progress for member {}", memberIdInfoForLog());
+            log.debug("Leave group operation already in progress for member {}", memberId);
             return leaveGroupInProgress.get();
         }
 
@@ -666,11 +666,11 @@ public class StreamsMembershipManager implements RequestManager {
         if (callbackError != null) {
             log.error("Member {} callback to revoke task assignment failed. It will proceed " +
                     "to clear its assignment and send a leave group heartbeat",
-                memberIdInfoForLog(), callbackError);
+                memberId, callbackError);
         } else {
             log.info("Member {} completed callback to revoke task assignment. It will proceed " +
                     "to clear its assignment and send a leave group heartbeat",
-                memberIdInfoForLog());
+                memberId);
         }
         leaving();
     }
@@ -759,7 +759,7 @@ public class StreamsMembershipManager implements RequestManager {
                 "\tOwned active tasks:            {}\n" +
                 "\tActive tasks to revoke:        {}\n",
             targetAssignment.localEpoch,
-            memberIdInfoForLog(),
+            memberId,
             assignedActiveTasks,
             ownedActiveTasks,
             activeTasksToRevoke
@@ -963,9 +963,5 @@ public class StreamsMembershipManager implements RequestManager {
             log.debug("The onAllTasksLost callback completed successfully; signaling to continue to the next phase of rebalance");
             future.complete(null);
         }
-    }
-
-    private String memberIdInfoForLog() {
-        return (memberId == null || memberId.isEmpty()) ? "<no ID>" : memberId;
     }
 }

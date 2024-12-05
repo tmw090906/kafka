@@ -1539,12 +1539,10 @@ public class GroupMetadataManager {
     }
 
     /**
-    /**
      * Validates the request.
      *
      * @param request The request to validate.
-     *
-     * @throws InvalidRequestException if the request is not valid.
+     * @throws InvalidRequestException      if the request is not valid.
      * @throws UnsupportedAssignorException if the assignor is not supported.
      */
     private void throwIfStreamsGroupHeartbeatRequestIsInvalid(
@@ -1553,10 +1551,10 @@ public class GroupMetadataManager {
         throwIfEmptyString(request.groupId(), "GroupId can't be empty.");
         throwIfEmptyString(request.instanceId(), "InstanceId can't be empty.");
         throwIfEmptyString(request.rackId(), "RackId can't be empty.");
+        throwIfEmptyString(request.memberId(), "MemberId can't be empty.");
 
-        if (request.memberEpoch() > 0 || request.memberEpoch() == LEAVE_GROUP_MEMBER_EPOCH) {
-            throwIfEmptyString(request.memberId(), "MemberId can't be empty.");
-        } else if (request.memberEpoch() == 0) {
+
+        if (request.memberEpoch() == 0) {
             if (request.rebalanceTimeoutMs() == -1) {
                 throw new InvalidRequestException("RebalanceTimeoutMs must be provided in first request.");
             }
@@ -2124,7 +2122,6 @@ public class GroupMetadataManager {
         throwIfStreamsGroupIsFull(group, memberId);
 
         // Get or create the member.
-        if (memberId.isEmpty()) memberId = Uuid.randomUuid().toString();
         StreamsGroupMember member;
         StreamsGroupMember.Builder updatedMemberBuilder;
         boolean staticMemberReplaced = false;
