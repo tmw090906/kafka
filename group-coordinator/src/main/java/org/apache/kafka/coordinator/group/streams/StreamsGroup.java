@@ -16,7 +16,6 @@
  */
 package org.apache.kafka.coordinator.group.streams;
 
-import org.apache.kafka.clients.consumer.internals.ConsumerProtocol;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.Uuid;
 import org.apache.kafka.common.errors.ApiException;
@@ -40,7 +39,6 @@ import org.apache.kafka.timeline.SnapshotRegistry;
 import org.apache.kafka.timeline.TimelineHashMap;
 import org.apache.kafka.timeline.TimelineInteger;
 import org.apache.kafka.timeline.TimelineObject;
-
 import org.slf4j.Logger;
 
 import java.util.Collections;
@@ -64,6 +62,11 @@ import static org.apache.kafka.coordinator.group.streams.StreamsGroup.StreamsGro
  * A Streams Group. All the metadata in this class are backed by records in the __consumer_offsets partitions.
  */
 public class StreamsGroup implements Group {
+
+    /**
+     * The protocol type for streams groups. There is only one protocol type, "streams".
+     */
+    private static final String PROTOCOL_TYPE = "streams";
 
     public enum StreamsGroupState {
         EMPTY("Empty"),
@@ -251,7 +254,7 @@ public class StreamsGroup implements Group {
     public ListGroupsResponseData.ListedGroup asListedGroup(long committedOffset) {
         return new ListGroupsResponseData.ListedGroup()
             .setGroupId(groupId)
-            .setProtocolType(ConsumerProtocol.PROTOCOL_TYPE)
+            .setProtocolType(PROTOCOL_TYPE)
             .setGroupState(state.get(committedOffset).toString())
             .setGroupType(type().toString());
     }

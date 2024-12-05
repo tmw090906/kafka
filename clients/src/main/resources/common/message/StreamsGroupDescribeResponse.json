@@ -46,8 +46,8 @@
         { "name": "AssignmentEpoch", "type": "int32", "versions": "0+",
           "about": "The assignment epoch." },
 
-        { "name":  "Topology", "type": "Topology", "versions": "0+",
-          "about": "The topology metadata currently initialized for the streams application.",
+        { "name":  "Topology", "type": "Topology", "versions": "0+", "nullableVersions": "0+", "default": "null",
+          "about": "The topology metadata currently initialized for the streams application. Can be null in case of a describe error.",
           "fields": [
             { "name": "Epoch", "type": "int32", "versions": "0+",
               "about": "The epoch of the currently initialized topology for this group." },
