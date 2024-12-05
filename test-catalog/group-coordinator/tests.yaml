@@ -337,6 +337,8 @@ org.apache.kafka.coordinator.group.GroupMetadataManagerTest:
 - testReplayConsumerGroupTargetAssignmentMetadataTombstone
 - testReplayGroupMetadataRecords
 - testResetRebalanceDelayWhenNewMemberJoinsGroupDuringInitialRebalance
+- testResolvedRegularExpressionsRemovedWhenConsumerMembersRemovedByAdminApi
+- testResolvedRegularExpressionsRemovedWhenMembersLeaveOrFenced
 - testSecondMemberPartiallyJoinAndTimeout
 - testSessionTimeoutExpiration
 - testSessionTimeoutExpirationStaticMember
@@ -683,6 +685,9 @@ org.apache.kafka.coordinator.group.modern.consumer.ConsumerGroupTest:
 - testAsDescribedGroup
 - testAsListedGroup
 - testClassicMembersSupportedProtocols
+- testComputeSubscribedTopicNames
+- testComputeSubscribedTopicNamesWithoutDeletedMembers
+- testCreateGroupTombstoneRecords
 - testCreateGroupTombstoneRecordsWithReplacedMember
 - testDeletingMemberRemovesPartitionEpoch
 - testFromClassicGroup
