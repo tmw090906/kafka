@@ -1571,7 +1571,7 @@ public class GroupMetadataManager {
         } else if (request.memberEpoch() == LEAVE_GROUP_STATIC_MEMBER_EPOCH) {
             throwIfEmptyString(request.memberId(), "MemberId can't be empty.");
             throwIfNull(request.instanceId(), "InstanceId can't be null.");
-        } else {
+        } else if ((request.memberEpoch() <  0) && (request.memberEpoch() != LEAVE_GROUP_MEMBER_EPOCH)) {
             throw new InvalidRequestException("MemberEpoch is invalid.");
         }
 
