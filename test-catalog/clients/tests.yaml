@@ -618,6 +618,7 @@ org.apache.kafka.clients.consumer.ConsumerConfigTest:
 - testProtocolConfigValidation
 - testRemoteAssignorConfig
 - testRemoteAssignorWithClassicGroupProtocol
+- testUnsupportedConfigsWithConsumerGroupProtocol
 org.apache.kafka.clients.consumer.ConsumerGroupMetadataTest:
 - testAssignmentConstructor
 - testGroupIdConstructor
@@ -781,6 +782,7 @@ org.apache.kafka.clients.consumer.KafkaConsumerTest:
 - testRegexSubscription
 - testResetToCommittedOffset
 - testResetUsingAutoResetPolicy
+- testResetUsingDurationBasedAutoResetPolicy
 - testReturnRecordsDuringRebalance
 - testSecondPollWithDeserializationErrorThrowsRecordDeserializationException
 - testSeekNegative
@@ -819,6 +821,7 @@ org.apache.kafka.clients.consumer.MockConsumerTest:
 - endOffsetsShouldBeIdempotent
 - shouldNotClearRecordsForPausedPartitions
 - testConsumerRecordsIsEmptyWhenReturningNoRecords
+- testDurationBasedOffsetReset
 - testRe2JPatternSubscription
 - testRebalanceListener
 - testSimpleMock
@@ -1070,6 +1073,7 @@ org.apache.kafka.clients.consumer.internals.AsyncKafkaConsumerTest:
 - testSeekToEnd
 - testSeekToEndWithException
 - testSubscribeGeneratesEvent
+- testSubscribePatternAgainstBrokerNotSupportingRegex
 - testSubscribePatternGeneratesEvent
 - testSubscribeToEmptyListActsAsUnsubscribe
 - testSubscribeToNullTopicCollection
@@ -1092,6 +1096,7 @@ org.apache.kafka.clients.consumer.internals.AsyncKafkaConsumerTest:
 org.apache.kafka.clients.consumer.internals.AutoOffsetResetStrategyTest:
 - testEqualsAndHashCode
 - testFromString
+- testTimestamp
 - testValidator
 org.apache.kafka.clients.consumer.internals.CommitRequestManagerTest:
 - testAsyncAutocommitNotRetriedAfterException
@@ -1171,6 +1176,7 @@ org.apache.kafka.clients.consumer.internals.ConsumerHeartbeatRequestManagerTest:
 - testSkippingHeartbeat
 - testSuccessfulHeartbeatTiming
 - testTimerNotDue
+- testUnsupportedVersion
 - testValidateConsumerGroupHeartbeatRequest
 - testValidateConsumerGroupHeartbeatRequestAssignmentSentWhenLocalEpochChanges
 - testisExpiredByUsedForLogging
@@ -1906,6 +1912,7 @@ org.apache.kafka.clients.consumer.internals.OffsetFetcherTest:
 - testUpdateFetchPositionOfPausedPartitionsWithAValidPosition
 - testUpdateFetchPositionOfPausedPartitionsWithoutAValidPosition
 - testUpdateFetchPositionResetToDefaultOffset
+- testUpdateFetchPositionResetToDurationOffset
 - testUpdateFetchPositionResetToEarliestOffset
 - testUpdateFetchPositionResetToLatestOffset
 - testresetPositionsMetadataRefresh
@@ -2007,6 +2014,7 @@ org.apache.kafka.clients.consumer.internals.ShareConsumeRequestManagerTest:
 - testPiggybackAcknowledgementsInFlight
 - testRetryAcknowledgements
 - testRetryAcknowledgementsWithLeaderChange
+- testServerDisconnectedOnShareAcknowledge
 - testShareFetchWithSubscriptionChange
 - testUnauthorizedTopic
 - testUnknownTopicIdError
@@ -2258,6 +2266,7 @@ org.apache.kafka.clients.consumer.internals.events.ApplicationEventProcessorTest
 - testSyncCommitEventWithoutCommitRequestManager
 - testTopicPatternSubscriptionChangeEvent
 - testTopicPatternSubscriptionChangeEventWithIllegalSubscriptionState
+- testTopicPatternSubscriptionTriggersJoin
 - testTopicSubscriptionChangeEvent
 - testTopicSubscriptionChangeEventWithIllegalSubscriptionState
 - testUpdatePatternSubscriptionEventOnlyTakesEffectWhenMetadataHasNewVersion
@@ -3984,6 +3993,7 @@ org.apache.kafka.common.requests.TxnOffsetCommitRequestTest:
 - testConstructor
 - testGetErrorResponse
 - testVersionSupportForGroupInstanceId
+- testVersionSupportForGroupMetadata
 org.apache.kafka.common.requests.TxnOffsetCommitResponseTest:
 - testConstructorWithErrorResponse
 - testParse
