@@ -132,8 +132,20 @@ public class StickyTaskAssignor implements TaskAssignor {
 
     private GroupAssignment buildGroupAssignment(final Set<String> members) {
         final Map<String, MemberAssignment> memberAssignments = new HashMap<>();
-        final Map<String, Set<TaskId>> activeTasksAssignments = activeTasksAssignments();
-        final Map<String, Set<TaskId>> standbyTasksAssignments = standbyTasksAssignments();
+
+        final Map<String, Set<TaskId>> activeTasksAssignments = processIdToState.entrySet().stream()
+            .flatMap(entry -> entry.getValue().assignedActiveTasksByMember().entrySet().stream())
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (set1, set2) -> {
+                set1.addAll(set2);
+                return set1;
+            }));
+
+        final Map<String, Set<TaskId>> standbyTasksAssignments = processIdToState.entrySet().stream()
+            .flatMap(entry -> entry.getValue().assignedStandbyTasksByMember().entrySet().stream())
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (set1, set2) -> {
+                set1.addAll(set2);
+                return set1;
+            }));
 
         for (String memberId : members) {
             Map<String, Set<Integer>> activeTasks = new HashMap<>();
@@ -149,24 +161,6 @@ public class StickyTaskAssignor implements TaskAssignor {
         }
 
         return new GroupAssignment(memberAssignments);
-    }
-
-    private Map<String, Set<TaskId>> standbyTasksAssignments() {
-        return processIdToState.entrySet().stream()
-                .flatMap(entry -> entry.getValue().assignedStandbyTasksByMember().entrySet().stream())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (set1, set2) -> {
-                    set1.addAll(set2);
-                    return set1;
-                }));
-    }
-
-    private Map<String, Set<TaskId>> activeTasksAssignments() {
-        return processIdToState.entrySet().stream()
-                .flatMap(entry -> entry.getValue().assignedActiveTasksByMember().entrySet().stream())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (set1, set2) -> {
-                    set1.addAll(set2);
-                    return set1;
-                }));
     }
 
     private Map<String, Set<Integer>> toCompactedTaskIds(final Set<TaskId> taskIds) {
@@ -195,25 +189,28 @@ public class StickyTaskAssignor implements TaskAssignor {
         for (Iterator<TaskId> it = activeTasks.iterator(); it.hasNext();) {
             final TaskId task = it.next();
             final Set<Member> prevMembers = standbyTaskToPrevMember.get(task);
-            if (prevMembers != null && !prevMembers.isEmpty()) {
-                final Member prevMember = findMemberWithLeastLoad(prevMembers, task, true);
-                if (prevMember != null && hasUnfulfilledQuota(prevMember)) {
-                    processIdToState.get(prevMember.processId).addTask(prevMember.memberId, task, true);
-                    updateHelpers(prevMember, task, true);
-                    it.remove();
-                }
+            final Member prevMember = findMemberWithLeastLoad(prevMembers, task, true);
+            if (prevMember != null && hasUnfulfilledQuota(prevMember)) {
+                processIdToState.get(prevMember.processId).addTask(prevMember.memberId, task, true);
+                updateHelpers(prevMember, task, true);
+                it.remove();
             }
         }
 
         // 3. assign any remaining unassigned tasks
         for (Iterator<TaskId> it = activeTasks.iterator(); it.hasNext();) {
             final TaskId task = it.next();
-            final Member member = findMemberWithLeastLoad(task);
-            if (member != null) {
-                processIdToState.get(member.processId).addTask(member.memberId, task, true);
-                it.remove();
-                updateHelpers(member, task, true);
+            final Set<Member> allMembers = processIdToState.entrySet().stream().flatMap(entry -> entry.getValue().memberToTaskCounts().keySet().stream()
+                    .map(memberId -> new Member(entry.getKey(), memberId))).collect(Collectors.toSet());
+            final Member member = findMemberWithLeastLoad(allMembers, task, false);
+            if (member == null) {
+                log.error("Unable to assign active task {} to any member.", task);
+                throw new TaskAssignorException("No member available to assign active task {}." + task);
             }
+            processIdToState.get(member.processId).addTask(member.memberId, task, true);
+            it.remove();
+            updateHelpers(member, task, true);
+
         }
     }
 
@@ -226,6 +223,9 @@ public class StickyTaskAssignor implements TaskAssignor {
     }
 
     private Member findMemberWithLeastLoad(final Set<Member> members, TaskId taskId, final boolean returnSameMember) {
+        if (members == null || members.isEmpty()) {
+            return null;
+        }
         Set<Member> rightPairs = members.stream()
                 .filter(member  -> taskPairs.hasNewPair(taskId, processIdToState.get(member.processId).assignedTasks()))
                 .collect(Collectors.toSet());
@@ -247,22 +247,6 @@ public class StickyTaskAssignor implements TaskAssignor {
         return memberWithLeastLoad(processWithLeastLoad.get());
     }
 
-    private Member findMemberWithLeastLoad(final TaskId taskId) {
-        Set<Member> allMembers = processIdToState.entrySet().stream()
-                .flatMap(entry -> entry.getValue().memberToTaskCounts().keySet().stream()
-                        .map(memberId -> new Member(entry.getKey(), memberId)))
-                .collect(Collectors.toSet());
-        return findMemberWithLeastLoad(allMembers, taskId, false);
-    }
-
-    private Member findMemberWithLeastLoad(final TaskId taskId, final Set<String> processes) {
-        Set<Member> allMembers = processes.stream()
-                .flatMap(processId -> processIdToState.get(processId).memberToTaskCounts().keySet().stream()
-                        .map(memberId -> new Member(processId, memberId)))
-                .collect(Collectors.toSet());
-        return findMemberWithLeastLoad(allMembers, taskId, false);
-    }
-
     private Member memberWithLeastLoad(final ProcessState processWithLeastLoad) {
         Optional<String> memberWithLeastLoad = processWithLeastLoad.memberToTaskCounts().entrySet().stream()
                 .min(Map.Entry.comparingByValue())
@@ -277,13 +261,19 @@ public class StickyTaskAssignor implements TaskAssignor {
     private void assignStandby(final Set<TaskId> standbyTasks, final int numStandbyReplicas) {
         for (TaskId task : standbyTasks) {
             for (int i = 0; i < numStandbyReplicas; i++) {
-                final Set<String> availableProcesses = findAllowedProcesses(task);
+
+                final Set<String> availableProcesses = processIdToState.values().stream()
+                    .filter(process -> !process.hasTask(task))
+                    .map(ProcessState::processId)
+                    .collect(Collectors.toSet());
+
+                final String errorMessage = "Unable to assign " + (numStandbyReplicas - i) +
+                    " of " + numStandbyReplicas + " standby tasks for task [" + task + "].";
+
                 if (availableProcesses.isEmpty()) {
-                    log.warn("Unable to assign " + (numStandbyReplicas - i) +
-                            " of " + numStandbyReplicas + " standby tasks for task [" + task + "]. " +
-                            "There is not enough available capacity. You should " +
-                            "increase the number of threads and/or application instances " +
-                            "to maintain the requested number of standby replicas.");
+                    log.warn("{} There is not enough available capacity. " +
+                        "You should increase the number of threads and/or application instances to maintain the requested number of standby replicas.",
+                        errorMessage);
                     break;
                 }
                 Member standby = null;
@@ -309,7 +299,14 @@ public class StickyTaskAssignor implements TaskAssignor {
 
                 // others
                 if (standby == null) {
-                    standby = findMemberWithLeastLoad(task, availableProcesses);
+                    final Set<Member> availableMembers = availableProcesses.stream()
+                        .flatMap(pId -> processIdToState.get(pId).memberToTaskCounts().keySet().stream()
+                            .map(mId -> new Member(pId, mId))).collect(Collectors.toSet());
+                    standby = findMemberWithLeastLoad(availableMembers, task, false);
+                    if (standby == null) {
+                        log.warn("{} Error in standby task assignment!", errorMessage);
+                        break;
+                    }
                 }
                 processIdToState.get(standby.processId).addTask(standby.memberId, task, false);
                 updateHelpers(standby, task, false);
@@ -320,19 +317,10 @@ public class StickyTaskAssignor implements TaskAssignor {
 
     private boolean isLoadBalanced(final String processId) {
         final ProcessState process = processIdToState.get(processId);
-        return process.hasCapacity() || isLeastLoadedProcess(process.load());
-    }
-
-    private boolean isLeastLoadedProcess(final double load) {
-        return processIdToState.values().stream()
-                .allMatch(process -> process.load() >= load);
-    }
-
-    private Set<String> findAllowedProcesses(final TaskId taskId) {
-        return processIdToState.values().stream()
-                .filter(process -> !process.hasTask(taskId))
-                .map(ProcessState::processId)
-                .collect(Collectors.toSet());
+        final double load = process.load();
+        boolean isLeastLoadedProcess = processIdToState.values().stream()
+            .allMatch(p -> p.load() >= load);
+        return process.hasCapacity() || isLeastLoadedProcess;
     }
 
     private void updateHelpers(final Member member, final TaskId taskId, final boolean isActive) {
