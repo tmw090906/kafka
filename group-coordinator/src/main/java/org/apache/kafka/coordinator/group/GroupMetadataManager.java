@@ -470,26 +470,6 @@ public class GroupMetadataManager {
     private final GroupConfigManager groupConfigManager;
 
     /**
-     * The maximum number of members allowed in a single consumer group.
-     */
-    private final int consumerGroupMaxSize;
-
-    /**
-     * The default heartbeat interval for consumer groups.
-     */
-    private final int consumerGroupHeartbeatIntervalMs;
-
-    /**
-     * The default session timeout for consumer groups.
-     */
-    private final int consumerGroupSessionTimeoutMs;
-
-    /**
-     * The metadata refresh interval.
-     */
-    private final int consumerGroupMetadataRefreshIntervalMs;
-
-    /**
      * The supported task assignors keyed by their name.
      */
     private final Map<String, TaskAssignor> taskAssignors;
@@ -3953,9 +3933,9 @@ public class GroupMetadataManager {
         return new CoordinatorResult<>(
             Collections.singletonList(newStreamsGroupCurrentAssignmentRecord(group.groupId(), leavingStaticMember)),
             new StreamsGroupHeartbeatResult(
-            new StreamsGroupHeartbeatResponseData()
-                .setMemberId(member.memberId())
-                .setMemberEpoch(LEAVE_GROUP_STATIC_MEMBER_EPOCH)
+                new StreamsGroupHeartbeatResponseData()
+                    .setMemberId(member.memberId())
+                    .setMemberEpoch(LEAVE_GROUP_STATIC_MEMBER_EPOCH)
             )
         );
     }
@@ -4401,29 +4381,6 @@ public class GroupMetadataManager {
             TimeUnit.MILLISECONDS,
             true,
             () -> streamsGroupFenceMemberOperation(groupId, memberId, "the member session expired.")
-        );
-    }
-
-    /**
-     * Schedules (or reschedules) the topology initialisation timeout for the member.
-     *
-     * @param groupId                      The group id.
-     * @param topologyId                   The topology id.
-     * @param memberId                     The member id.
-     * @param topologyIntializationTimeout The topology initialization timeout.
-     */
-    private void scheduleStreamsGroupTopologyInitializationTimeout(
-        String groupId,
-        String topologyId,
-        String memberId,
-        int topologyIntializationTimeout
-    ) {
-        timer.schedule(
-            streamsTopologyInitializationTimeoutKey(groupId, topologyId),
-            topologyIntializationTimeout,
-            TimeUnit.MILLISECONDS,
-            true,
-            () -> streamsGroupFenceMemberOperation(groupId, memberId, "the timeout for the topology intialization expired.")
         );
     }
 

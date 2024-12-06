@@ -32,7 +32,7 @@ import org.apache.kafka.server.metrics.MetricConfigs;
 import org.apache.kafka.storage.internals.log.CleanerConfig;
 import org.apache.kafka.storage.internals.log.LogConfig;
 
-import java.util.List;
+import java.util.Arrays;
 import java.util.Map;
 
 /**

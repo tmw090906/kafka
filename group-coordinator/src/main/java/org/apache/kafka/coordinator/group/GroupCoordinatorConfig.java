@@ -408,7 +408,8 @@ public class GroupCoordinatorConfig {
                     GroupCoordinatorConfig.NEW_GROUP_CONFIG_DEF,
                     GroupCoordinatorConfig.OFFSET_MANAGEMENT_CONFIG_DEF,
                     GroupCoordinatorConfig.CONSUMER_GROUP_CONFIG_DEF,
-                    GroupCoordinatorConfig.SHARE_GROUP_CONFIG_DEF
+                    GroupCoordinatorConfig.SHARE_GROUP_CONFIG_DEF,
+                    GroupCoordinatorConfig.STREAMS_GROUP_CONFIG_DEF
                 )),
                 props
             )

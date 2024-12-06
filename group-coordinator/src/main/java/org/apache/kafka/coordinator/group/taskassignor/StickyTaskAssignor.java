@@ -178,7 +178,7 @@ public class StickyTaskAssignor implements TaskAssignor {
         for (Iterator<TaskId> it = activeTasks.iterator(); it.hasNext();) {
             final TaskId task = it.next();
             final Member prevMember = activeTaskToPrevMember.get(task);
-            if (prevMember != null && (hasUnfulfilledQuota(prevMember))) {
+            if (prevMember != null && hasUnfulfilledQuota(prevMember)) {
                 processIdToState.get(prevMember.processId).addTask(prevMember.memberId, task, true);
                 updateHelpers(prevMember, task, true);
                 it.remove();
