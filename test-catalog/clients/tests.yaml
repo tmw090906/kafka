@@ -2351,6 +2351,7 @@ org.apache.kafka.clients.producer.KafkaProducerTest:
 - testRetriesAndIdempotenceForIdempotentProducers
 - testSendToInvalidTopic
 - testSendTxnOffsetsWithGroupId
+- testSendTxnOffsetsWithGroupIdTransactionV2
 - testSendTxnOffsetsWithGroupMetadata
 - testSerializerClose
 - testShouldNotCallMetricReporterMetricRemovalWithExistingProducerMetric
@@ -2360,6 +2361,7 @@ org.apache.kafka.clients.producer.KafkaProducerTest:
 - testTopicExpiryInMetadata
 - testTopicNotExistingInMetadata
 - testTopicRefreshInMetadata
+- testTransactionV2Produce
 - testTransactionalMethodThrowsWhenSenderClosed
 - testUnSubscribingNonExisingMetricsDoesntCauseError
 - testUnsubscribingCustomMetricWithSameNameAsExistingMetricDoesntAffectProducerMetric
@@ -2667,6 +2669,7 @@ org.apache.kafka.clients.producer.internals.TransactionManagerTest:
 - testFailIfNotReadyForSendNoOngoingTransaction
 - testFailIfNotReadyForSendNoProducerId
 - testFailedInflightBatchAfterEpochBump
+- testFatalErrorWhenProduceResponseWithInvalidPidMapping
 - testFencedInstanceIdInTxnOffsetCommitByGroupMetadata
 - testFindCoordinatorAllowedInAbortableErrorState
 - testFlushPendingPartitionsOnCommit
@@ -2706,6 +2709,7 @@ org.apache.kafka.clients.producer.internals.TransactionManagerTest:
 - testLookupCoordinatorOnDisconnectBeforeSend
 - testLookupCoordinatorOnNotCoordinatorError
 - testMaybeAddPartitionToTransaction
+- testMaybeAddPartitionToTransactionInTransactionV2
 - testMaybeResolveSequencesTransactionalProducer
 - testMultipleAddPartitionsPerForOneProduce
 - testNeedToTriggerEpochBumpFromClientDuringCoordinatorDisconnect
@@ -2744,7 +2748,9 @@ org.apache.kafka.clients.producer.internals.TransactionManagerTest:
 - testTransactionAbortableExceptionInFindCoordinator
 - testTransactionAbortableExceptionInInitProducerId
 - testTransactionAbortableExceptionInTxnOffsetCommit
+- testTransactionManagerDisablesV2
 - testTransactionManagerEnablesV2
+- testTransactionV2AddPartitionAndOffsets
 - testTransactionalIdAuthorizationFailureInAddOffsetsToTxn
 - testTransactionalIdAuthorizationFailureInAddPartitions
 - testTransactionalIdAuthorizationFailureInFindCoordinator

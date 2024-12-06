@@ -318,6 +318,9 @@ org.apache.kafka.storage.internals.log.TransactionIndexTest:
 - testSanityCheck
 - testTruncate
 - testUpdateParentDir
+org.apache.kafka.storage.internals.log.VerificationGuardTest:
+- testEqualsAndHashCode
+- testVerify
 org.apache.kafka.storage.internals.utils.ThrottlerTest:
 - testThrottleDesiredRate
 - testUpdateThrottleDesiredRate

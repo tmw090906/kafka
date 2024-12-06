@@ -1286,6 +1286,9 @@ kafka.coordinator.transaction.TransactionCoordinatorConcurrencyTest:
 - testConcurrentRandomSequences
 - testConcurrentTransactionExpiration
 kafka.coordinator.transaction.TransactionCoordinatorTest:
+- TestEndTxnRequestWhenEmptyTransactionStateForAbortInV1
+- TestEndTxnRequestWhenEmptyTransactionStateForAbortInV2
+- TestEndTxnRequestWhenEmptyTransactionStateForCommitInV2
 - shouldAbortExpiredTransactionsInOngoingStateAndBumpEpoch
 - shouldAbortTransactionOnHandleInitPidWhenExistingTransactionInOngoingState
 - shouldAcceptInitPidAndReturnNextPidWhenTransactionalIdIsNull
@@ -1329,7 +1332,6 @@ kafka.coordinator.transaction.TransactionCoordinatorTest:
 - shouldRespondWithSuccessOnAddPartitionsWhenStateIsCompleteCommit
 - shouldRespondWithSuccessOnAddPartitionsWhenStateIsOngoing
 - shouldReturnConcurrentTransactionsOnEndTxnRequestWhenStatusIsPrepareCommit
-- shouldReturnCorrectlyWhenTransactionVersionUpgraded
 - shouldReturnInvalidEpochOnEndTxnWhenEpochIsLarger
 - shouldReturnInvalidEpochOnEndTxnWhenEpochIsSmaller
 - shouldReturnInvalidRequestWhenTransactionalIdIsEmpty
@@ -1338,9 +1340,7 @@ kafka.coordinator.transaction.TransactionCoordinatorTest:
 - shouldReturnInvalidTxnRequestOnEndTxnRequestWhenStatusIsPrepareAbort
 - shouldReturnInvalidTxnRequestOnEndTxnV2IfNotEndTxnV2Retry
 - shouldReturnOkOnEndTxnV2IfEndTxnV2RetryEpochOverflow
-- shouldReturnOkOnEndTxnWhenStatusIsCompleteAbortAndResultIsAbort
-- shouldReturnOkOnEndTxnWhenStatusIsCompleteCommitAndResultIsCommit
-- shouldReturnWhenTransactionVersionDowngraded
+- shouldReturnOkOnEndTxnWhenStatusIsCompleteAbortAndResultIsAbortInV2
 - shouldUseLastEpochToFenceWhenEpochsAreExhausted
 - shouldWaitForCommitToCompleteOnHandleInitPidAndExistingTransactionInPrepareAbortState
 - shouldWaitForCommitToCompleteOnHandleInitPidAndExistingTransactionInPrepareCommitState
@@ -1348,6 +1348,11 @@ kafka.coordinator.transaction.TransactionCoordinatorTest:
 - testDescribeTransactionsWhileCoordinatorLoading
 - testDescribeTransactionsWithEmptyTransactionalId
 - testDescribeTransactionsWithExpiringTransactionalId
+- testEndTxnRequestWhenStatusIsCompleteCommitAndResultIsAbortInV1
+- testEndTxnRequestWhenStatusIsCompleteCommitAndResultIsAbortInV2
+- testEndTxnWhenStatusIsCompleteAbortAndResultIsAbortInV1
+- testEndTxnWhenStatusIsCompleteCommitAndResultIsCommitInV1
+- testEndTxnWhenStatusIsCompleteCommitAndResultIsCommitInV2
 - testFenceProducerWhenMappingExistsWithDifferentProducerId
 - testInitProducerIdStaleCurrentEpochProvided
 - testInitProducerIdWithCurrentEpochProvided
@@ -1410,6 +1415,8 @@ kafka.coordinator.transaction.TransactionMetadataTest:
 - testFenceProducerAfterEpochsExhausted
 - testFenceProducerNotAllowedIfItWouldOverflow
 - testInitializeEpoch
+- testInvalidTransitionFromCompleteAbortToFence
+- testInvalidTransitionFromCompleteCommitToFence
 - testNormalEpochBump
 - testRotateProducerId
 - testRotateProducerIdInOngoingState
@@ -1423,6 +1430,9 @@ kafka.coordinator.transaction.TransactionMetadataTest:
 - testTolerateUpdateTimeResetDuringProducerIdRotation
 - testTolerateUpdateTimeShiftDuringEpochBump
 - testTransactionStateIdAndNameMapping
+- testTransitFromCompleteAbortToPrepareAbortInV2
+- testTransitFromCompleteCommitToPrepareAbortInV2
+- testTransitFromEmptyToPrepareAbortInV2
 kafka.coordinator.transaction.TransactionStateManagerTest:
 - shouldNotRemoveExpiredTransactionalIdsIfLogAppendFails
 - shouldNotRemoveOngoingTransactionalIds
@@ -3809,6 +3819,7 @@ kafka.server.share.SharePartitionTest:
 - testAcquireWithEmptyFetchRecords
 - testAcquireWithMaxFetchRecords
 - testAcquireWithMultipleBatchesAndMaxFetchRecords
+- testAcquireWithWriteShareGroupStateDelay
 - testAcquisitionLockAfterDifferentAcknowledges
 - testAcquisitionLockForAcquiringMultipleRecords
 - testAcquisitionLockForAcquiringMultipleRecordsWithOverlapAndNewBatch
@@ -4084,9 +4095,6 @@ kafka.utils.json.JsonValueTest:
 - testJsonValueEquals
 - testJsonValueHashCode
 - testJsonValueToString
-unit.kafka.log.VerificationGuardTest:
-- testEqualsAndHashCode
-- testVerify
 unit.kafka.server.AllocateProducerIdsRequestTest:
 - testAllocateProducersIdSentToController
 - testAllocateProducersIdSentToNonController
