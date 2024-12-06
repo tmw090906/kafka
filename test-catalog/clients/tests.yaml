@@ -264,6 +264,7 @@ org.apache.kafka.clients.admin.KafkaAdminClientTest:
 - testDescribeConsumerGroupNumRetries
 - testDescribeConsumerGroupRetryBackoff
 - testDescribeConsumerGroups
+- testDescribeConsumerGroupsGroupIdNotFound
 - testDescribeConsumerGroupsWithAuthorizedOperationsOmitted
 - testDescribeFeaturesFailure
 - testDescribeFeaturesSuccess
@@ -287,6 +288,7 @@ org.apache.kafka.clients.admin.KafkaAdminClientTest:
 - testDescribeReplicaLogDirsUnexpected
 - testDescribeReplicaLogDirsWithNonExistReplica
 - testDescribeShareGroups
+- testDescribeShareGroupsGroupIdNotFound
 - testDescribeShareGroupsWithAuthorizedOperationsOmitted
 - testDescribeTopicPartitionsApiWithAuthorizedOps
 - testDescribeTopicPartitionsApiWithoutAuthorizedOps

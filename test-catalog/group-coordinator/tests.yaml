@@ -218,6 +218,7 @@ org.apache.kafka.coordinator.group.GroupMetadataManagerTest:
 - testDelayRebalanceUptoRebalanceTimeout
 - testDescribeGroupRebalancing
 - testDescribeGroupStable
+- testDescribeGroupsBeforeV6GroupIdNotFoundException
 - testDescribeGroupsGroupIdNotFoundException
 - testDynamicMembersCanRejoinGroupWithMaxSizeWhileRebalancing
 - testDynamicMembersJoinGroupWithMaxSizeAndNotRequiredKnownMember
