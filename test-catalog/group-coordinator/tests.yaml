@@ -686,6 +686,7 @@ org.apache.kafka.coordinator.group.modern.consumer.ConsumerGroupTest:
 - testAsDescribedGroup
 - testAsListedGroup
 - testClassicMembersSupportedProtocols
+- testComputeSubscribedRegularExpressions
 - testComputeSubscribedTopicNames
 - testComputeSubscribedTopicNamesWithoutDeletedMembers
 - testCreateGroupTombstoneRecords
@@ -708,6 +709,7 @@ org.apache.kafka.coordinator.group.modern.consumer.ConsumerGroupTest:
 - testRemoveStaticMember
 - testStateTransitionMetrics
 - testSubscribedRegularExpressionCount
+- testSubscriptionType
 - testUpdateAndRemoveRegularExpression
 - testUpdateInvertedAssignment
 - testUpdateMember
