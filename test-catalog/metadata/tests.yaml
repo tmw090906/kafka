@@ -215,7 +215,8 @@ org.apache.kafka.controller.QuorumControllerTest:
 - testRegisterBrokerKRaftVersions
 - testSnapshotSaveAndLoad
 - testTimeouts
-- testUncleanShutdownBroker
+- testUncleanShutdownBrokerElrEnabled
+- testUncleanShutdownElrDisabled
 - testUnregisterBroker
 - testUpgradeFromPreProductionVersion
 org.apache.kafka.controller.QuorumFeaturesTest:
