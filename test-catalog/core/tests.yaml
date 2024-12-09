@@ -2095,6 +2095,7 @@ kafka.raft.KafkaMetadataLogTest:
 - testCreateSnapshotBeforeLogStartOffset
 - testCreateSnapshotDivergingEpoch
 - testCreateSnapshotFromEndOffset
+- testCreateSnapshotInMiddleOfBatch
 - testCreateSnapshotLaterThanHighWatermark
 - testCreateSnapshotMuchLaterEpoch
 - testCreateSnapshotOlderEpoch
