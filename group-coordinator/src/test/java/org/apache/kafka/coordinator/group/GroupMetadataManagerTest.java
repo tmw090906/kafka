@@ -340,7 +340,15 @@ public class GroupMetadataManagerTest {
             new StreamsGroupHeartbeatRequestData()
                 .setGroupId("foo")
                 .setMemberEpoch(0)));
-        assertEquals("MemberId can't be empty.", ex.getMessage());
+        assertEquals("MemberId can't be null or empty.", ex.getMessage());
+
+        // MemberId must not be null in all requests
+        ex = assertThrows(InvalidRequestException.class, () -> context.streamsGroupHeartbeat(
+                new StreamsGroupHeartbeatRequestData()
+                        .setGroupId("foo")
+                        .setMemberId(null)
+                        .setMemberEpoch(0)));
+        assertEquals("MemberId can't be null or empty.", ex.getMessage());
 
         // InstanceId must be non-empty if provided in all requests.
         ex = assertThrows(InvalidRequestException.class, () -> context.streamsGroupHeartbeat(
@@ -359,6 +367,27 @@ public class GroupMetadataManagerTest {
                 .setMemberEpoch(1)
                 .setRackId("")));
         assertEquals("RackId can't be empty.", ex.getMessage());
+
+        // InstanceId can't be null with static membership
+        ex = assertThrows(InvalidRequestException.class, () -> context.streamsGroupHeartbeat(
+                new StreamsGroupHeartbeatRequestData()
+                        .setGroupId("foo")
+                        .setMemberId(memberId)
+                        .setMemberEpoch(LEAVE_GROUP_STATIC_MEMBER_EPOCH)
+                        .setInstanceId(null)
+                        .setRackId("rackid")));
+        assertEquals("InstanceId can't be null.", ex.getMessage());
+
+        // valid memberEpoch values are 0+, -1 (member leave group), or -2 (static member leave group)
+        ex = assertThrows(InvalidRequestException.class, () -> context.streamsGroupHeartbeat(
+                new StreamsGroupHeartbeatRequestData()
+                        .setGroupId("foo")
+                        .setMemberId(memberId)
+                        .setMemberEpoch(-3)
+                        .setInstanceId("bar")
+                        .setRackId("baz")));
+        assertEquals("MemberEpoch is invalid.", ex.getMessage());
+
 
         // TODO: Test supplied topology
     }
