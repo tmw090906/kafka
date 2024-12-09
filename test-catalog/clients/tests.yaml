@@ -1018,8 +1018,6 @@ org.apache.kafka.clients.consumer.internals.AsyncKafkaConsumerTest:
 - testCloseLeavesGroup
 - testCloseLeavesGroupDespiteInterrupt
 - testCloseLeavesGroupDespiteOnPartitionsLostError
-- testCloseWithInvalidTopicException
-- testCloseWithTopicAuthorizationException
 - testCommitAsyncUserSuppliedCallbackNoException
 - testCommitAsyncUserSuppliedCallbackWithException
 - testCommitAsyncWithNullCallback
@@ -1086,8 +1084,6 @@ org.apache.kafka.clients.consumer.internals.AsyncKafkaConsumerTest:
 - testSubscriptionOnNullTopic
 - testSuccessfulStartupShutdown
 - testUnsubscribeGeneratesUnsubscribeEvent
-- testUnsubscribeWithInvalidTopicException
-- testUnsubscribeWithTopicAuthorizationException
 - testUnsubscribeWithoutGroupId
 - testUpdatePatternSubscriptionEventGeneratedOnlyIfPatternUsed
 - testVerifyApplicationEventOnShutdown
@@ -1857,6 +1853,7 @@ org.apache.kafka.clients.consumer.internals.NetworkClientDelegateTest:
 - testHasAnyPendingRequests
 - testPollResultTimer
 - testPropagateMetadataError
+- testPropagateMetadataErrorWithErrorEvent
 - testSuccessfulResponse
 - testTimeoutAfterSend
 - testTimeoutBeforeSend
