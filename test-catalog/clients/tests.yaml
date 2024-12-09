@@ -2140,6 +2140,7 @@ org.apache.kafka.clients.consumer.internals.ShareMembershipManagerTest:
 org.apache.kafka.clients.consumer.internals.ShareSessionHandlerTest:
 - testAddNewIdAfterTopicRemovedFromSession
 - testForgottenPartitions
+- testNextAcknowledgementsClearedOnInvalidRequest
 - testPartitionRemoval
 - testShareSession
 - testTopicIdReplaced
