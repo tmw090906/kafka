@@ -124,6 +124,44 @@ org.apache.kafka.storage.internals.checkpoint.PartitionMetadataFileTest:
 - testRead
 - testSetRecordWithDifferentTopicId
 - testSetRecordWithSameTopicId
+org.apache.kafka.storage.internals.log.LocalLogTest:
+- testCreateAndDeleteSegment
+- testDeleteSegmentFilesAsync
+- testDeleteSegmentFilesSync
+- testFlushingNonExistentDir
+- testLogAppend
+- testLogCloseFailureWhenInMemoryBufferClosed
+- testLogCloseHandlers
+- testLogCloseHandlersIdempotent
+- testLogCloseIdempotent
+- testLogCloseSuccess
+- testLogDeleteDirName
+- testLogDeleteDirSuccessWhenEmptyAndFailureWhenNonEmpty
+- testLogDeleteSegmentsSuccess
+- testLogDirRenameToExistingDir
+- testLogDirRenameToNewDir
+- testLogFlush
+- testNewSegmentsAfterRoll
+- testNonActiveSegmentsFrom
+- testOffsetFromFile
+- testParseTopicPartitionName
+- testParseTopicPartitionNameForEmptyName
+- testParseTopicPartitionNameForExistingInvalidDir
+- testParseTopicPartitionNameForInvalidPartition
+- testParseTopicPartitionNameForMissingPartition
+- testParseTopicPartitionNameForMissingSeparator
+- testParseTopicPartitionNameForMissingTopic
+- testParseTopicPartitionNameForNull
+- testParseTopicPartitionNameWithPeriodForDeletedTopic
+- testRemoveAndDeleteSegmentsAsync
+- testRemoveAndDeleteSegmentsSync
+- testRollEmptyActiveSegment
+- testRollSegmentErrorWhenNextOffsetIsIllegal
+- testRollSegmentThatAlreadyExists
+- testTruncateFullyAndStartAt
+- testTruncateTo
+- testUpdateConfig
+- testWhenFetchOffsetHigherThanMaxOffset
 org.apache.kafka.storage.internals.log.LogOffsetMetadataTest:
 - testMessageOffsetOnly
 - testOnOlderSegment
@@ -318,6 +356,9 @@ org.apache.kafka.storage.internals.log.TransactionIndexTest:
 - testSanityCheck
 - testTruncate
 - testUpdateParentDir
+org.apache.kafka.storage.internals.log.VerificationGuardTest:
+- testEqualsAndHashCode
+- testVerify
 org.apache.kafka.storage.internals.utils.ThrottlerTest:
 - testThrottleDesiredRate
 - testUpdateThrottleDesiredRate
@@ -356,6 +397,8 @@ org.apache.kafka.tiered.storage.integration.RollAndOffloadActiveSegmentTest:
 org.apache.kafka.tiered.storage.integration.TransactionsWithTieredStoreTest:
 - testAbortTransactionTimeout
 - testBasicTransactions
+- testBumpTransactionalEpochWithTV2Disabled
+- testBumpTransactionalEpochWithTV2Enabled
 - testCommitTransactionTimeout
 - testConsecutivelyRunInitTransactions
 - testDelayedFetchIncludesAbortedTransaction
@@ -368,5 +411,6 @@ org.apache.kafka.tiered.storage.integration.TransactionsWithTieredStoreTest:
 - testInitTransactionsTimeout
 - testMultipleMarkersOneLeader
 - testOffsetMetadataInSendOffsetsToTransaction
+- testReadCommittedConsumerShouldNotSeeUndecidedData
 - testSendOffsetsToTransactionTimeout
 - testSendOffsetsWithGroupMetadata
