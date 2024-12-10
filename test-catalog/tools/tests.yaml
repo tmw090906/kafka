@@ -486,9 +486,6 @@ org.apache.kafka.tools.consumer.TransactionLogMessageFormatterTest:
 - testTransactionLogMessageFormatter
 org.apache.kafka.tools.consumer.group.AuthorizerIntegrationTest:
 - testDescribeGroupCliWithGroupDescribe
-org.apache.kafka.tools.consumer.group.ConsumerGroupCommandTest:
-- testValidateRegexCommandWithInvalidRegex
-- testValidateRegexCommandWithValidRegex
 org.apache.kafka.tools.consumer.group.ConsumerGroupServiceTest:
 - testAdminRequestsForDescribeNegativeOffsets
 - testAdminRequestsForDescribeOffsets
