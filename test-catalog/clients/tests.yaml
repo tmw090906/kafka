@@ -1283,7 +1283,6 @@ org.apache.kafka.clients.consumer.internals.ConsumerNetworkClientTest:
 - testDisconnectWakesUpPoll
 - testDisconnectWithInFlightRequests
 - testDisconnectWithUnsentRequests
-- testFutureCompletionOutsidePoll
 - testInvalidTopicExceptionPropagatedFromMetadata
 - testMetadataFailurePropagated
 - testTimeoutUnsentRequest
@@ -1471,6 +1470,7 @@ org.apache.kafka.clients.consumer.internals.CoordinatorRequestManagerTest:
 - testBackoffAfterRetriableFailure
 - testFindCoordinatorResponseVersions
 - testMarkCoordinatorUnknown
+- testMarkCoordinatorUnknownLoggingAccuracy
 - testNetworkTimeout
 - testNullGroupIdShouldThrow
 - testPropagateAndBackoffAfterFatalError

@@ -227,6 +227,8 @@ org.apache.kafka.raft.KafkaRaftClientTest:
 - testFetchShouldBeTreatedAsLeaderAcknowledgement
 - testFollowerAsObserverDoesNotBecomeCandidateAfterFetchTimeout
 - testFollowerGracefulShutdown
+- testFollowerLeaderRediscoveryAfterBrokerNotAvailableError
+- testFollowerLeaderRediscoveryAfterRequestTimeout
 - testFollowerLogReconciliation
 - testFollowerReplication
 - testGracefulShutdownSingleMemberQuorum
@@ -299,6 +301,7 @@ org.apache.kafka.raft.KafkaRaftClientTest:
 - testRetryElection
 - testStaticVotersIgnoredWithBootstrapSnapshot
 - testUnattachedAsObserverDoesNotBecomeCandidateAfterElectionTimeout
+- testUnattachedAsVoterCanBecomeFollowerAfterFindingLeader
 - testVoteRequestClusterIdValidation
 - testVoteRequestTimeout
 - testVoteResponseIgnoredAfterBecomingFollower
