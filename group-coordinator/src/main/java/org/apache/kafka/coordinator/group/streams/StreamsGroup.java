@@ -71,7 +71,7 @@ public class StreamsGroup implements Group {
 
     public enum StreamsGroupState {
         EMPTY("Empty"),
-        NOT_READY("Not Ready"),
+        NOT_READY("NotReady"),
         ASSIGNING("Assigning"),
         RECONCILING("Reconciling"),
         STABLE("Stable"),
@@ -83,7 +83,11 @@ public class StreamsGroup implements Group {
 
         StreamsGroupState(String name) {
             this.name = name;
-            this.lowerCaseName = name.toLowerCase(Locale.ROOT).replace(" ", "_");
+            if (Objects.equals(name, "NotReady")) {
+                this.lowerCaseName = "not_ready";
+            } else {
+                this.lowerCaseName = name.toLowerCase(Locale.ROOT);
+            }
         }
 
         @Override

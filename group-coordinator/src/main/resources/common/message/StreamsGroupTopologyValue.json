@@ -21,7 +21,7 @@
   "flexibleVersions": "0+",
   "fields": [
     { "name": "Epoch", "type": "int32", "versions": "0+",
-      "about": "The epoch of the topology. Must be non-zero. " },
+      "about": "The epoch of the topology." },
     { "name":  "Subtopologies", "type": "[]Subtopology", "versions": "0+",
       "about": "The sub-topologies of the streams application.",
       "fields": [

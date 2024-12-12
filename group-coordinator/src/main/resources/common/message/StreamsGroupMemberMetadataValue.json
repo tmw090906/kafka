@@ -32,7 +32,7 @@
       "about": "The rebalance timeout." },
 
     { "name": "TopologyEpoch", "type": "int32", "versions": "0+",
-      "about": "The epoch of the topology. Must be non-zero." },
+      "about": "The epoch of the topology." },
 
     { "name": "ProcessId", "type": "string", "versions": "0+",
       "about": "Identity of the streams instance that may have multiple consumers." },
