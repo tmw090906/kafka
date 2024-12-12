@@ -34,4 +34,4 @@ jobs:
         uses: ./.github/actions/setup-python
       - name: Run Report
         run: |
-          ./.github/scripts/develocity_reports.py
+          python ./.github/scripts/develocity_reports.py
