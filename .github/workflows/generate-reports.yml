@@ -28,6 +28,10 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
+      - name: Env
+        run: printenv
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Setup Python
