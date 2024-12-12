@@ -785,7 +785,7 @@ def print_summary(problematic_tests: Dict[str, Dict], flaky_regressions: Dict[st
 def main():
     # Configuration
     BASE_URL = "https://ge.apache.org"
-    AUTH_TOKEN = os.environ.get("DEVELOCITY_ACCESS_KEY")
+    AUTH_TOKEN = os.environ.get("DEVELOCITY_ACCESS_TOKEN")
     PROJECT = "kafka"
     QUARANTINE_THRESHOLD_DAYS = 7
     MIN_FAILURE_RATE = 0.1
