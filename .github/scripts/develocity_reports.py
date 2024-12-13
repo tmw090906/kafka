@@ -779,7 +779,6 @@ def print_summary(problematic_tests: Dict[str, Dict], flaky_regressions: Dict[st
             else:
                 print(f"  → Class-level flakiness rate: {case['failure_rate']:.2%}")
     
-    print("\n" + "=" * 50)
 
 def main():
     token = None
@@ -844,7 +843,7 @@ def main():
         print(f"This report was run on {datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M:%S')} UTC")
 
         print_summary(problematic_tests, flaky_regressions)
-               
+
         # Print Flaky Test Regressions
         print("\n## Flaky Test Regressions")
         if not flaky_regressions:
@@ -886,7 +885,7 @@ def main():
             print(f"\nFound {len(sorted_tests)} high-priority quarantined test classes:")
             for full_class_name, details in sorted_tests:
                 class_result = details['container_result']
-                class_name = full_class_name.split(".")[0]
+                class_name = full_class_name.split(".")[-1]
                 print(f"### {class_name}")
                 print(f"{full_class_name} has been quarantined for {details['days_quarantined']} days")
                 print(f"Overall class failure: {details['failure_rate']:.2%}")
