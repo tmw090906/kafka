@@ -101,6 +101,11 @@ public class TargetAssignmentBuilder {
     private final TaskAssignor assignor;
 
     /**
+     * The assignment configs.
+     */
+    private final Map<String, String> assignmentConfigs;
+
+    /**
      * The members in the group.
      */
     private Map<String, StreamsGroupMember> members = Collections.emptyMap();
@@ -140,11 +145,13 @@ public class TargetAssignmentBuilder {
     public TargetAssignmentBuilder(
         String groupId,
         int groupEpoch,
-        TaskAssignor assignor
+        TaskAssignor assignor,
+        Map<String, String> assignmentConfigs
     ) {
         this.groupId = Objects.requireNonNull(groupId);
         this.groupEpoch = groupEpoch;
         this.assignor = Objects.requireNonNull(assignor);
+        this.assignmentConfigs = Objects.requireNonNull(assignmentConfigs);
     }
 
     /**
@@ -286,7 +293,7 @@ public class TargetAssignmentBuilder {
                 new GroupSpecImpl(
                     Collections.unmodifiableMap(memberSpecs),
                     new ArrayList<>(topology.subtopologies().keySet()),
-                    new HashMap<>()
+                    assignmentConfigs
                 ),
                 new TopologyMetadata(subscriptionMetadata, topology)
             );

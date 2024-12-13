@@ -171,8 +171,8 @@ public class StreamsGroup implements Group {
     private final TimelineHashMap<String, TimelineHashMap<Integer, String>> invertedTargetWarmupTasksAssignment;
 
     /**
-     * The current task memberID maps each active/standby/warmup task to the member ID(s) their current owner. When a
-     * member revokes a partition, it removes its member ID from this map. When a member gets a partition, it adds its member ID to this map.
+     * These maps map each active/standby/warmup task to the process ID(s) of their current owner. When a
+     * member revokes a partition, it removes its process ID from this map. When a member gets a partition, it adds its process ID to this map.
      */
     private final TimelineHashMap<String, TimelineHashMap<Integer, String>> currentActiveTaskProcessId;
     private final TimelineHashMap<String, TimelineHashMap<Integer, Set<String>>> currentStandbyTaskProcessIds;

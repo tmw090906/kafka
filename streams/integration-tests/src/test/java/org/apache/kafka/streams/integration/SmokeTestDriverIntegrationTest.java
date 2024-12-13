@@ -109,7 +109,7 @@ public class SmokeTestDriverIntegrationTest {
     // We set 2 timeout condition to fail the test before passing the verification:
     // (1) 10 min timeout, (2) 30 tries of polling without getting any data
     @ParameterizedTest
-    @CsvSource({"false, false, true"})
+    @CsvSource({"false, false, true", "true, false, true"})
 //    @CsvSource({"false, false", "true, false", "true, true"})
     public void shouldWorkWithRebalance(
         final boolean stateUpdaterEnabled,

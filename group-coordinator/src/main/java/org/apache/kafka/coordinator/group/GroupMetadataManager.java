@@ -282,7 +282,7 @@ public class GroupMetadataManager {
         private int streamsGroupHeartbeatIntervalMs = 5000;
         private int streamsGroupMetadataRefreshIntervalMs = Integer.MAX_VALUE;
         private int streamsGroupSessionTimeoutMs = 45000;
-
+        private int streamsGroupNumStandbyReplicas = 0;
 
         Builder withLogContext(LogContext logContext) {
             this.logContext = logContext;
@@ -344,6 +344,11 @@ public class GroupMetadataManager {
             return this;
         }
 
+        Builder withStreamsGroupNumStandbyReplicas(int streamsGroupNumStandbyReplicas) {
+            this.streamsGroupNumStandbyReplicas = streamsGroupNumStandbyReplicas;
+            return this;
+        }
+
         Builder withMetadataImage(MetadataImage metadataImage) {
             this.metadataImage = metadataImage;
             return this;
@@ -393,7 +398,8 @@ public class GroupMetadataManager {
                 streamsGroupMaxSize,
                 streamsGroupSessionTimeoutMs,
                 streamsGroupHeartbeatIntervalMs,
-                streamsGroupMetadataRefreshIntervalMs
+                streamsGroupMetadataRefreshIntervalMs,
+                streamsGroupNumStandbyReplicas
             );
         }
     }
@@ -490,6 +496,11 @@ public class GroupMetadataManager {
     private final int streamsGroupHeartbeatIntervalMs;
 
     /**
+     * The number of standby replicas
+     */
+    private final int streamsGroupNumStandbyReplicas;
+
+    /**
      * The session timeout for streams groups.
      */
     private final int streamsGroupSessionTimeoutMs;
@@ -539,7 +550,8 @@ public class GroupMetadataManager {
         int streamsGroupMaxSize,
         int streamsGroupSessionTimeoutMs,
         int streamsGroupHeartbeatIntervalMs,
-        int streamsGroupMetadataRefreshIntervalMs
+        int streamsGroupMetadataRefreshIntervalMs,
+        int streamsGroupNumStandbyReplicas
     ) {
         this.logContext = logContext;
         this.log = logContext.logger(GroupMetadataManager.class);
@@ -563,6 +575,7 @@ public class GroupMetadataManager {
         this.streamsGroupSessionTimeoutMs = streamsGroupSessionTimeoutMs;
         this.streamsGroupHeartbeatIntervalMs = streamsGroupHeartbeatIntervalMs;
         this.streamsGroupMetadataRefreshIntervalMs = streamsGroupMetadataRefreshIntervalMs;
+        this.streamsGroupNumStandbyReplicas = streamsGroupNumStandbyReplicas;
         this.taskAssignors = taskAssignors.stream().collect(Collectors.toMap(TaskAssignor::name, Function.identity()));
         this.defaultTaskAssignor = taskAssignors.get(0);
 
@@ -2124,7 +2137,7 @@ public class GroupMetadataManager {
             member = group.getOrMaybeCreateMember(memberId, createIfNotExists);
             throwIfMemberEpochIsInvalid(member, memberEpoch, ownedActiveTasks, ownedStandbyTasks, ownedWarmupTasks);
             if (createIfNotExists) {
-                log.info("[GroupId {}] Member {} joins the streams group.", groupId, memberId);
+                log.info("[GroupId {}][MemberId {}] Member joins the streams group.", groupId, memberId);
             }
             updatedMemberBuilder = new StreamsGroupMember.Builder(member);
         } else {
@@ -2135,7 +2148,7 @@ public class GroupMetadataManager {
                     // New static member.
                     member = group.getOrMaybeCreateMember(memberId, createIfNotExists);
                     updatedMemberBuilder = new StreamsGroupMember.Builder(member);
-                    log.info("[GroupId {}] Static member {} with instance id {} joins the streams group.", groupId, memberId, instanceId);
+                    log.info("[GroupId {}][MemberId {}] Static member with instance id {} joins the streams group.", groupId, memberId, instanceId);
                 } else {
                     // Static member rejoins with a different member id so it should replace
                     // the previous instance iff the previous member had sent a leave group.
@@ -2149,8 +2162,8 @@ public class GroupMetadataManager {
                     // Remove the member without canceling its timers in case the change is reverted. If the
                     // change is not reverted, the group validation will fail and the timer will do nothing.
                     removeStreamsMember(records, groupId, member.memberId());
-                    log.info("[GroupId {}] Static member with unknown member id and instance id {} re-joins the streams group. " +
-                        "Created a new member {} to replace the existing member {}.", groupId, instanceId, memberId, member.memberId());
+                    log.info("[GroupId {}][MemberId {}] Static member with unknown member id and instance id {} re-joins the streams group. " +
+                        "Created a new member {} to replace the existing member {}.", groupId, memberId, instanceId, memberId, member.memberId());
                 }
             } else {
                 throwIfStaticMemberIsUnknown(member, instanceId);
@@ -2213,7 +2226,7 @@ public class GroupMetadataManager {
             topology = new StreamsTopology(clientTopology.epoch(), subtopologyMap);
 
             if (group.topology() == null) {
-                log.info("[GroupId {}] Member {} initialized the topology with epoch {}", groupId, memberId, clientTopology.epoch());
+                log.info("[GroupId {}][MemberId {}] Member initialized the topology with epoch {}", groupId, memberId, clientTopology.epoch());
 
                 records.add(newStreamsGroupTopologyRecord(groupId, recordValue));
 
@@ -2234,8 +2247,8 @@ public class GroupMetadataManager {
             );
 
             if (!partitionMetadata.equals(group.partitionMetadata())) {
-                log.info("[GroupId {}] Computed new partition metadata: {}.",
-                    groupId, partitionMetadata);
+                log.info("[GroupId {}][MemberId {}] Computed new partition metadata: {}.",
+                    groupId, memberId, partitionMetadata);
                 bumpGroupEpoch = true;
                 records.add(newStreamsGroupPartitionMetadataRecord(groupId, partitionMetadata));
                 group.setPartitionMetadata(partitionMetadata);
@@ -2244,7 +2257,7 @@ public class GroupMetadataManager {
             if (bumpGroupEpoch) {
                 groupEpoch += 1;
                 records.add(newStreamsGroupEpochRecord(groupId, groupEpoch));
-                log.info("[GroupId {}] Bumped streams group epoch to {}.", groupId, groupEpoch);
+                log.info("[GroupId {}][MemberId {}] Bumped streams group epoch to {}.", groupId, memberId, groupEpoch);
                 metrics.record(STREAMS_GROUP_REBALANCES_SENSOR_NAME);
             }
 
@@ -2254,7 +2267,7 @@ public class GroupMetadataManager {
         // If we updated the groupEpoch, we may need to reconfigure the topology
         ConfiguredTopology configuredTopology = group.configuredTopology();
         if (bumpGroupEpoch) {
-            log.info("[GroupId {}] Configuring the topology {}", groupId, topology);
+            log.info("[GroupId {}][MemberId {}] Configuring the topology {}", groupId, memberId, topology);
             configuredTopology =
                 InternalTopicManager.configureTopics(logContext, topology, partitionMetadata);
         }
@@ -3506,7 +3519,7 @@ public class GroupMetadataManager {
         if (!updatedMember.equals(member)) {
             records.add(newStreamsGroupCurrentAssignmentRecord(groupId, updatedMember));
 
-            log.info("[GroupId {}] Member {} new assignment state: epoch={}, previousEpoch={}, state={}, "
+            log.info("[GroupId {}][MemberId {}] Member's new assignment state: epoch={}, previousEpoch={}, state={}, "
                     + "assignedActiveTasks={}, assignedStandbyTasks={}, assignedWarmupTasks={} and revokedPartitions={}.",
                 groupId, updatedMember.memberId(), updatedMember.memberEpoch(), updatedMember.previousMemberEpoch(), updatedMember.state(),
                 taskAssignmentToString(updatedMember.assignedActiveTasks()),
@@ -3652,10 +3665,10 @@ public class GroupMetadataManager {
             long assignorTimeMs = time.milliseconds() - startTimeMs;
 
             if (log.isDebugEnabled()) {
-                log.debug("[GroupId {}] Computed a new target assignment for epoch {} with '{}' assignor in {}ms: {}.",
+                log.debug("[GroupId {}] Computed a new target assignment for group epoch {} with '{}' assignor in {}ms: {}.",
                     group.groupId(), groupEpoch, preferredServerAssignor, assignorTimeMs, assignmentResult.targetAssignment());
             } else {
-                log.info("[GroupId {}] Computed a new target assignment for epoch {} with '{}' assignor in {}ms.",
+                log.info("[GroupId {}] Computed a new target assignment for group epoch {} with '{}' assignor in {}ms.",
                     group.groupId(), groupEpoch, preferredServerAssignor, assignorTimeMs);
             }
 
@@ -3755,13 +3768,18 @@ public class GroupMetadataManager {
         String preferredServerAssignor = defaultTaskAssignor.name();
         try {
             org.apache.kafka.coordinator.group.streams.TargetAssignmentBuilder assignmentResultBuilder =
-                new org.apache.kafka.coordinator.group.streams.TargetAssignmentBuilder(group.groupId(), groupEpoch, taskAssignors.get(preferredServerAssignor))
-                    .withMembers(group.members())
-                    .withTopology(configuredTopology)
-                    .withStaticMembers(group.staticMembers())
-                    .withPartitionMetadata(subscriptionMetadata)
-                    .withTargetAssignment(group.targetAssignment())
-                    .addOrUpdateMember(updatedMember.memberId(), updatedMember);
+                new org.apache.kafka.coordinator.group.streams.TargetAssignmentBuilder(
+                    group.groupId(),
+                    groupEpoch,
+                    taskAssignors.get(preferredServerAssignor),
+                    Map.of(GroupCoordinatorConfig.STREAMS_GROUP_NUM_STANDBY_REPLICAS_CONFIG, String.valueOf(streamsGroupNumStandbyReplicas))
+                )
+                .withMembers(group.members())
+                .withTopology(configuredTopology)
+                .withStaticMembers(group.staticMembers())
+                .withPartitionMetadata(subscriptionMetadata)
+                .withTargetAssignment(group.targetAssignment())
+                .addOrUpdateMember(updatedMember.memberId(), updatedMember);
             org.apache.kafka.coordinator.group.streams.TargetAssignmentBuilder.TargetAssignmentResult assignmentResult;
             // A new static member is replacing an older one with the same subscriptions.
             // We just need to remove the older member and add the newer one. The new member should
@@ -3775,15 +3793,15 @@ public class GroupMetadataManager {
                     .build();
             }
 
-            log.info("[GroupId {}] Computed a new target assignment for epoch {} with '{}' assignor: {}.",
-                group.groupId(), groupEpoch, preferredServerAssignor, assignmentResult.targetAssignment());
+            log.info("[GroupId {}][MemberId {}] Computed a new target assignment for epoch {} with '{}' assignor: {}.",
+                group.groupId(), member.memberId(), groupEpoch, preferredServerAssignor, assignmentResult.targetAssignment());
 
             records.addAll(assignmentResult.records());
             return assignmentResult.targetAssignment().get(updatedMember.memberId());
         } catch (PartitionAssignorException ex) {
             String msg = String.format("Failed to compute a new target assignment for epoch %d: %s",
                 groupEpoch, ex.getMessage());
-            log.error("[GroupId {}] {}.", group.groupId(), msg);
+            log.error("[GroupId {}][MemberId {}] {}.", group.groupId(), member.memberId(), msg);
             throw new UnknownServerException(msg, ex);
         }
     }
@@ -3850,19 +3868,19 @@ public class GroupMetadataManager {
 
         if (instanceId == null) {
             StreamsGroupMember member = group.getOrMaybeCreateMember(memberId, false);
-            log.info("[GroupId {}] Member {} left the streams group.", groupId, memberId);
+            log.info("[GroupId {}][MemberId {}] Member {} left the streams group.", groupId, memberId, memberId);
             return streamsGroupFenceMember(group, member, new StreamsGroupHeartbeatResult(response));
         } else {
             StreamsGroupMember member = group.staticMember(instanceId);
             throwIfStaticMemberIsUnknown(member, instanceId);
             throwIfInstanceIdIsFenced(member, groupId, memberId, instanceId);
             if (memberEpoch == LEAVE_GROUP_STATIC_MEMBER_EPOCH) {
-                log.info("[GroupId {}] Static Member {} with instance id {} temporarily left the streams group.",
-                    group.groupId(), memberId, instanceId);
+                log.info("[GroupId {}][MemberId {}] Static Member {} with instance id {} temporarily left the streams group.",
+                    group.groupId(), memberId, memberId, instanceId);
                 return streamsGroupStaticMemberGroupLeave(group, member);
             } else {
-                log.info("[GroupId {}] Static Member {} with instance id {} left the streams group.",
-                    group.groupId(), memberId, instanceId);
+                log.info("[GroupId {}][MemberId {}] Static Member {} with instance id {} left the streams group.",
+                    group.groupId(), memberId, memberId, instanceId);
                 return streamsGroupFenceMember(group, member, new StreamsGroupHeartbeatResult(response));
             }
         }

@@ -752,17 +752,23 @@ public class StreamsMembershipManager implements RequestManager {
         SortedSet<StreamsAssignmentInterface.TaskId> ownedActiveTasks = toTaskIdSet(currentAssignment.activeTasks);
         SortedSet<StreamsAssignmentInterface.TaskId> activeTasksToRevoke = new TreeSet<>(ownedActiveTasks);
         activeTasksToRevoke.removeAll(assignedActiveTasks);
+        SortedSet<StreamsAssignmentInterface.TaskId> assignedStandbyTasks = toTaskIdSet(targetAssignment.standbyTasks);
+        SortedSet<StreamsAssignmentInterface.TaskId> ownedStandbyTasks = toTaskIdSet(currentAssignment.standbyTasks);
 
         log.info("Assigned tasks with local epoch {}\n" +
                 "\tMember:                        {}\n" +
                 "\tAssigned active tasks:         {}\n" +
                 "\tOwned active tasks:            {}\n" +
-                "\tActive tasks to revoke:        {}\n",
+                "\tActive tasks to revoke:        {}\n" +
+                "\tAssigned standby tasks:        {}\n" +
+                "\tOwned standby tasks:           {}\n",
             targetAssignment.localEpoch,
             memberId,
             assignedActiveTasks,
             ownedActiveTasks,
-            activeTasksToRevoke
+            activeTasksToRevoke,
+            assignedStandbyTasks,
+            ownedStandbyTasks
         );
 
         SortedSet<TopicPartition> ownedTopicPartitionsFromSubscriptionState = new TreeSet<>(TOPIC_PARTITION_COMPARATOR);
@@ -785,7 +791,7 @@ public class StreamsMembershipManager implements RequestManager {
 
         final CompletableFuture<Void> onTasksRevokedAndAssignedCallbacksExecuted = onTasksRevokedCallbackExecuted.thenCompose(__ -> {
             if (!maybeAbortReconciliation()) {
-                return assignActiveTasks(assignedActiveTasks, ownedActiveTasks);
+                return assignTasks(assignedActiveTasks, ownedActiveTasks, assignedStandbyTasks);
             }
             return CompletableFuture.completedFuture(null);
         });
@@ -825,11 +831,17 @@ public class StreamsMembershipManager implements RequestManager {
         return streamsAssignmentInterface.requestOnTasksRevokedCallbackInvocation(activeTasksToRevoke);
     }
 
-    private CompletableFuture<Void> assignActiveTasks(final SortedSet<StreamsAssignmentInterface.TaskId> activeTasksToAssign,
-                                                      final SortedSet<StreamsAssignmentInterface.TaskId> ownedActiveTasks) {
-        log.info("Assigning active tasks {}", activeTasksToAssign.stream()
-            .map(StreamsAssignmentInterface.TaskId::toString)
-            .collect(Collectors.joining(", ")));
+    private CompletableFuture<Void> assignTasks(final SortedSet<StreamsAssignmentInterface.TaskId> activeTasksToAssign,
+                                                final SortedSet<StreamsAssignmentInterface.TaskId> ownedActiveTasks,
+                                                final SortedSet<StreamsAssignmentInterface.TaskId> standbyTasksToAssign) {
+        log.info("Assigning active tasks {} and standby tasks {}",
+            activeTasksToAssign.stream()
+                .map(StreamsAssignmentInterface.TaskId::toString)
+                .collect(Collectors.joining(", ")),
+            standbyTasksToAssign.stream()
+                .map(StreamsAssignmentInterface.TaskId::toString)
+                .collect(Collectors.joining(", "))
+        );
 
         final SortedSet<TopicPartition> partitionsToAssign = topicPartitionsForActiveTasks(activeTasksToAssign);
         final SortedSet<TopicPartition> partitionsToAssigneNotPreviouslyOwned =
@@ -843,7 +855,7 @@ public class StreamsMembershipManager implements RequestManager {
         return streamsAssignmentInterface.requestOnTasksAssignedCallbackInvocation(
             new StreamsAssignmentInterface.Assignment(
                 activeTasksToAssign,
-                Collections.emptySet(),
+                standbyTasksToAssign,
                 Collections.emptySet()
             )
         );

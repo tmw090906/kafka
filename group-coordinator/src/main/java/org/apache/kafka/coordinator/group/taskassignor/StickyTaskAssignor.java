@@ -19,6 +19,8 @@ package org.apache.kafka.coordinator.group.taskassignor;
 
 
 
+import org.apache.kafka.coordinator.group.GroupCoordinatorConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +66,7 @@ public class StickyTaskAssignor implements TaskAssignor {
         //standby
         final int numStandbyReplicas =
                 groupSpec.assignmentConfigs().isEmpty() ? 0
-                        : Integer.parseInt(groupSpec.assignmentConfigs().get("numStandbyReplicas"));
+                        : Integer.parseInt(groupSpec.assignmentConfigs().get(GroupCoordinatorConfig.STREAMS_GROUP_NUM_STANDBY_REPLICAS_CONFIG));
         if (numStandbyReplicas > 0) {
             Set<TaskId> statefulTasks = toTaskIds(groupSpec, topologyDescriber, false);
             assignStandby(statefulTasks, numStandbyReplicas);

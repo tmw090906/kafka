@@ -244,9 +244,10 @@ public class GroupCoordinatorShard implements CoordinatorShard<CoordinatorRecord
                 .withGroupCoordinatorMetricsShard(metricsShard)
                 // TODO: Do we need separate configs for streams groups?
                 .withStreamsGroupAssignors(Collections.singletonList(new StickyTaskAssignor()))
+                .withStreamsGroupNumStandbyReplicas(config.streamsGroupNumStandbyReplicas())
                 .withStreamsGroupMaxSize(config.consumerGroupMaxSize())
-                .withStreamsGroupSessionTimeout(config.consumerGroupSessionTimeoutMs())
-                .withStreamsGroupHeartbeatInterval(config.consumerGroupHeartbeatIntervalMs())
+                .withStreamsGroupSessionTimeout(config.streamsGroupSessionTimeoutMs())
+                .withStreamsGroupHeartbeatInterval(config.streamsGroupHeartbeatIntervalMs())
                 .withGroupCoordinatorMetricsShard(metricsShard)
                 .build();
 
