@@ -736,7 +736,7 @@ def print_summary(problematic_tests: Dict[str, Dict], flaky_regressions: Dict[st
     
     # Process problematic quarantined tests
     if len(problematic_tests) > 0:
-        print(f"Found {len(problematic_tests)} tests that have been quarantined for a while.")
+        print(f"Found {len(problematic_tests)} tests that have been quarantined for a while and are still flaky.")
     for full_class_name, details in problematic_tests.items():
         for test_case in details['test_cases']:
             total_runs = test_case.outcome_distribution.total
@@ -775,15 +775,17 @@ def print_summary(problematic_tests: Dict[str, Dict], flaky_regressions: Dict[st
         by_class[case['class']].append(case)
 
     # Print summary
+    print("<table><tr><td>Class</td><td>Test Case</td><td>Failure Rate</td><td>Build Scans</td></tr>")
     for full_class_name, cases in by_class.items():
         class_name = full_class_name.split(".")[-1]
+        print(f"<tr><td colspan=\"4\">{class_name}</td></tr>")
         for case in cases:
             method = case['method']
             if method != 'N/A':
-                print(f"  → {class_name}#{method:<60} failed {case['failure_rate']:.2%} of {case['total_runs']} runs")
+                print(f"<tr><td colspan=\"2\">{method:<60}</td><td>{case['failure_rate']:.2%}</td><td>{case['total_runs']}</td></tr>")
             else:
-                print(f"  → {class_name} now has flakiness rate of {case['failure_rate']:.2%}")
-    
+                print(f"<tr><td colspan=\"2\">--</td><td>{case['failure_rate']:.2%}</td><td>{case['total_runs']}</td></tr>")
+    print("</table>")
 
 def main():
     token = None
