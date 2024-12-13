@@ -868,6 +868,12 @@ def main():
         if not cleared_tests:
             print("No tests ready to be cleared from quarantine.")
         else:
+            # Print summary
+            print("<table><tr><td>Class</td><td>Test Case</td><td>Success Rate</td><td>Build Scans</td></tr>")
+            for test_name, details in cleared_tests.items():
+                print(f"<tr><td>{test_name}</td><td></td><td>{details['success_rate']:.2%}</td><td>{details['total_executions']}</td></tr>")
+            print("</table>")
+
             for test_name, details in cleared_tests.items():
                 print(f"\n{test_name}")
                 print(f"Success Rate: {details['success_rate']:.2%}")
