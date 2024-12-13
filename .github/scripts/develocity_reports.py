@@ -735,20 +735,25 @@ def print_summary(problematic_tests: Dict[str, Dict], flaky_regressions: Dict[st
     all_problem_cases = []
     
     # Process problematic quarantined tests
-    for class_name, details in problematic_tests.items():
+    if len(problematic_tests) > 0:
+        print(f"Found {len(problematic_tests)} tests that have been quarantined for a while.")
+    for full_class_name, details in problematic_tests.items():
         for test_case in details['test_cases']:
             total_runs = test_case.outcome_distribution.total
+            method_name = test_case.name.split('.')[-1]
             if total_runs > 0:
                 failure_rate = (test_case.outcome_distribution.failed + 
                               test_case.outcome_distribution.flaky) / total_runs
                 all_problem_cases.append({
-                    'class': class_name,
-                    'method': test_case.name.split('.')[-1],
+                    'class': full_class_name,
+                    'method': method_name,
                     'failure_rate': failure_rate,
                     'total_runs': total_runs
                 })
     
     # Process flaky regressions
+    if len(flaky_regressions) > 0:
+        print(f"Found {len(flaky_regressions)} tests that have started recently failing.")
     for test_name, details in flaky_regressions.items():
         all_problem_cases.append({
             'class': test_name,
@@ -756,7 +761,7 @@ def print_summary(problematic_tests: Dict[str, Dict], flaky_regressions: Dict[st
             'failure_rate': details['recent_flaky_rate'],
             'total_runs': len(details['recent_executions'])
         })
-    
+
     # Sort by failure rate descending
     sorted_cases = sorted(all_problem_cases, 
                          key=lambda x: x['failure_rate'], 
@@ -768,16 +773,16 @@ def print_summary(problematic_tests: Dict[str, Dict], flaky_regressions: Dict[st
         if case['class'] not in by_class:
             by_class[case['class']] = []
         by_class[case['class']].append(case)
-    
+
     # Print summary
-    for class_name, cases in by_class.items():
-        print(f"\n{class_name}")
+    for full_class_name, cases in by_class.items():
+        class_name = full_class_name.split(".")[-1]
         for case in cases:
             method = case['method']
             if method != 'N/A':
-                print(f"  → {method:<60} {case['failure_rate']:.2%}")
+                print(f"  → {class_name}#{method:<60} failed {case['failure_rate']:.2%} of {case['total_runs']} runs")
             else:
-                print(f"  → Class-level flakiness rate: {case['failure_rate']:.2%}")
+                print(f"  → {class_name} now has flakiness rate of {case['failure_rate']:.2%}")
     
 
 def main():
