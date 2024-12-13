@@ -519,11 +519,14 @@ org.apache.kafka.tools.consumer.group.DeleteOffsetsConsumerGroupCommandIntegrati
 - testDeleteOffsetsOfStableConsumerGroupWithUnknownTopicPartition
 org.apache.kafka.tools.consumer.group.DescribeConsumerGroupTest:
 - testDescribeAllExistingGroups
-- testDescribeExistingGroup
 - testDescribeExistingGroupWithNoMembers
 - testDescribeExistingGroups
+- testDescribeGroupMemberWithMigration
+- testDescribeGroupMembers
 - testDescribeGroupMembersWithShortInitializationTimeout
+- testDescribeGroupOffsets
 - testDescribeGroupOffsetsWithShortInitializationTimeout
+- testDescribeGroupState
 - testDescribeGroupStateWithShortInitializationTimeout
 - testDescribeGroupWithShortInitializationTimeout
 - testDescribeMembersOfExistingGroup
