@@ -24,6 +24,10 @@ org.apache.kafka.tools.ClusterToolTest:
 - testClusterIdWithBootstrapController
 - testClusterTooOldToHaveId
 - testLegacyModeClusterCannotUnregisterBroker
+- testListEndpointsArgumentWithBootstrapController
+- testListEndpointsArgumentWithBootstrapServer
+- testListEndpointsWithBootstrapController
+- testListEndpointsWithBootstrapServer
 - testPrintClusterId
 - testUnregister
 - testUnregisterBroker

@@ -258,6 +258,7 @@ org.apache.kafka.clients.admin.KafkaAdminClientTest:
 - testDescribeCluster
 - testDescribeClusterFailBack
 - testDescribeClusterHandleError
+- testDescribeClusterHandleUnsupportedVersionForIncludingFencedBrokers
 - testDescribeConfigsPartialResponse
 - testDescribeConfigsUnrequested
 - testDescribeConsumerGroupConfigs
