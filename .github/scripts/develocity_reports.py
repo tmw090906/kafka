@@ -783,9 +783,18 @@ def print_summary(problematic_tests: Dict[str, Dict], flaky_regressions: Dict[st
     print("\n" + "=" * 50)
 
 def main():
+    token = None
+    if os.environ.get("DEVELOCITY_ACCESS_TOKEN"):
+        token = os.environ.get("DEVELOCITY_ACCESS_TOKEN")
+    elif os.environ.get("GE_ACCESS_TOKEN"):
+        # Special case for when we run in GHA
+        token = os.environ.get("GE_ACCESS_TOKEN").removeprefix("ge.apache.org=")
+    else:
+        print("No auth token was specified. You must set DEVELOCITY_ACCESS_TOKEN to your personal access token.")
+        exit(1)
+
     # Configuration
     BASE_URL = "https://ge.apache.org"
-    AUTH_TOKEN = os.environ.get("DEVELOCITY_ACCESS_TOKEN")
     PROJECT = "kafka"
     QUARANTINE_THRESHOLD_DAYS = 7
     MIN_FAILURE_RATE = 0.1
@@ -793,7 +802,7 @@ def main():
     SUCCESS_THRESHOLD = 0.7  # For cleared tests
     MIN_FLAKY_RATE = 0.2    # For flaky regressions
 
-    analyzer = TestAnalyzer(BASE_URL, AUTH_TOKEN)
+    analyzer = TestAnalyzer(BASE_URL, token)
     
     try:
         # Get quarantined test results
