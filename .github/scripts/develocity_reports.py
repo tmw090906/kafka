@@ -777,8 +777,7 @@ def print_summary(problematic_tests: Dict[str, Dict], flaky_regressions: Dict[st
     # Print summary
     print("<table><tr><td>Class</td><td>Test Case</td><td>Failure Rate</td><td>Build Scans</td></tr>")
     for full_class_name, cases in by_class.items():
-        class_name = full_class_name.split(".")[-1]
-        print(f"<tr><td colspan=\"4\">{class_name}</td></tr>")
+        print(f"<tr><td colspan=\"4\">{full_class_name}</td></tr>")
         for case in cases:
             method = case['method']
             if method != 'N/A':
