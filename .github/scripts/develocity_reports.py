@@ -782,9 +782,9 @@ def print_summary(problematic_tests: Dict[str, Dict], flaky_regressions: Dict[st
         for case in cases:
             method = case['method']
             if method != 'N/A':
-                print(f"<tr><td colspan=\"2\">{method:<60}</td><td>{case['failure_rate']:.2%}</td><td>{case['total_runs']}</td></tr>")
+                print(f"<tr><td></td><td>{method:<60}</td><td>{case['failure_rate']:.2%}</td><td>{case['total_runs']}</td></tr>")
             else:
-                print(f"<tr><td colspan=\"2\">--</td><td>{case['failure_rate']:.2%}</td><td>{case['total_runs']}</td></tr>")
+                print(f"<tr><td></td><td></td><td>{case['failure_rate']:.2%}</td><td>{case['total_runs']}</td></tr>")
     print("</table>")
 
 def main():
