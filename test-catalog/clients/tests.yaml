@@ -3183,6 +3183,7 @@ org.apache.kafka.common.message.NullableStructMessageTest:
 - testNullForAllFields
 - testNullableStruct2CanNotBeNullInVersion0
 - testRoundTrip
+- testTaggedStructSize
 - testToStringWithNullStructs
 org.apache.kafka.common.message.RecordsSerdeTest:
 - testSerdeEmptyRecords
