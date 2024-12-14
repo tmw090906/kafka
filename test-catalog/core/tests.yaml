@@ -965,6 +965,7 @@ kafka.coordinator.group.GroupCoordinatorAdapterTest:
 - testJoinGroup
 - testJoinShareGroup
 - testListGroups
+- testOnTransactionCompletedWithUnexpectedException
 - testShareGroupDescribe
 - testSyncGroup
 kafka.coordinator.group.GroupCoordinatorConcurrencyTest:
@@ -2965,6 +2966,7 @@ kafka.server.KafkaApisTest:
 - testHandleTxnOffsetCommitRequestTopicsAndPartitionsValidation
 - testHandleWriteTxnMarkersRequestWithNewGroupCoordinator
 - testHandleWriteTxnMarkersRequestWithNewGroupCoordinatorErrorTranslation
+- testHandleWriteTxnMarkersRequestWithOldGroupCoordinator
 - testIncrementalAlterConfigsWithAuthorizer
 - testIncrementalClientMetricAlterConfigs
 - testIncrementalConsumerGroupAlterConfigs
