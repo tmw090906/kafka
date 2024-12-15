@@ -800,8 +800,12 @@ kafka.api.UserQuotaTest:
 - testThrottledRequest
 kafka.api.test.ProducerCompressionTest:
 - testCompression
-kafka.clients.consumer.AsyncKafkaConsumerIntegrationTest:
+kafka.clients.consumer.ConsumerIntegrationTest:
 - testAsyncConsumerWithOldGroupCoordinator
+- testFetchPartitionsAfterFailedListenerWithGroupProtocolClassic
+- testFetchPartitionsAfterFailedListenerWithGroupProtocolConsumer
+- testFetchPartitionsWithAlwaysFailedListenerWithGroupProtocolClassic
+- testFetchPartitionsWithAlwaysFailedListenerWithGroupProtocolConsumer
 kafka.cluster.AssignmentStateTest:
 - testPartitionAssignmentStatus
 kafka.cluster.BrokerEndPointTest:
