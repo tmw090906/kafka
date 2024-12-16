@@ -159,6 +159,8 @@ org.apache.kafka.streams.StreamsBuilderTest:
 - shouldUseThisStoreSupplierEvenIfDslStoreSuppliersConfiguredInTopologyConfig
 - shouldUseTopologyOverrideStoreTypeOverConfiguredDslStoreSupplier
 - shouldWrapProcessorsForCoGroupedStreamAggregate
+- shouldWrapProcessorsForForeignKeyInnerJoin
+- shouldWrapProcessorsForForeignKeyLeftJoin
 - shouldWrapProcessorsForMapValuesWithMaterializedStore
 - shouldWrapProcessorsForMaterializedSourceTable
 - shouldWrapProcessorsForProcess
