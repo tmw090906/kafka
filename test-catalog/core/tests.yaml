@@ -311,8 +311,6 @@ kafka.api.ConsumerTopicCreationTest:
 kafka.api.ConsumerWithLegacyMessageFormatIntegrationTest:
 - testEarliestOrLatestOffsets
 - testOffsetsForTimes
-kafka.api.CustomQuotaCallbackTest:
-- testCustomQuotaCallback
 kafka.api.DelegationTokenEndToEndAuthorizationTest:
 - testCreateUserWithDelegationToken
 - testNoConsumeWithDescribeAclViaAssign
