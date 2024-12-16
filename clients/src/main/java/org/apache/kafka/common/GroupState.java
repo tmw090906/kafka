@@ -82,7 +82,7 @@ public enum GroupState {
         } else if (type == GroupType.CONSUMER) {
             return Set.of(PREPARING_REBALANCE, COMPLETING_REBALANCE, STABLE, DEAD, EMPTY, ASSIGNING, RECONCILING);
         } else if (type == GroupType.STREAMS) {
-            return Set.of(PREPARING_REBALANCE, COMPLETING_REBALANCE, STABLE, DEAD, EMPTY, ASSIGNING, RECONCILING, NOT_READY);
+            return Set.of(STABLE, DEAD, EMPTY, ASSIGNING, RECONCILING, NOT_READY);
         } else if (type == GroupType.SHARE) {
             return Set.of(STABLE, DEAD, EMPTY);
         } else {
