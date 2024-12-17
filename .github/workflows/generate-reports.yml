@@ -20,10 +20,6 @@ on:
   schedule:
     - cron: '0 6 * * *'   # Run daily at 6am UTC
 
-  pull_request:
-    branches:
-      - trunk
-
 jobs:
   flaky-test-report:
     name: Flaky Test Report
