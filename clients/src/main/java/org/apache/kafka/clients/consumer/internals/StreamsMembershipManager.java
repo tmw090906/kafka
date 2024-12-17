@@ -747,13 +747,14 @@ public class StreamsMembershipManager implements RequestManager {
 
         markReconciliationInProgress();
 
-        // ToDo: add standby and warmup tasks
         SortedSet<StreamsAssignmentInterface.TaskId> assignedActiveTasks = toTaskIdSet(targetAssignment.activeTasks);
         SortedSet<StreamsAssignmentInterface.TaskId> ownedActiveTasks = toTaskIdSet(currentAssignment.activeTasks);
         SortedSet<StreamsAssignmentInterface.TaskId> activeTasksToRevoke = new TreeSet<>(ownedActiveTasks);
         activeTasksToRevoke.removeAll(assignedActiveTasks);
         SortedSet<StreamsAssignmentInterface.TaskId> assignedStandbyTasks = toTaskIdSet(targetAssignment.standbyTasks);
         SortedSet<StreamsAssignmentInterface.TaskId> ownedStandbyTasks = toTaskIdSet(currentAssignment.standbyTasks);
+        SortedSet<StreamsAssignmentInterface.TaskId> assignedWarmupTasks = toTaskIdSet(targetAssignment.warmupTasks);
+        SortedSet<StreamsAssignmentInterface.TaskId> ownedWarmupTasks = toTaskIdSet(currentAssignment.warmupTasks);
 
         log.info("Assigned tasks with local epoch {}\n" +
                 "\tMember:                        {}\n" +
@@ -761,14 +762,18 @@ public class StreamsMembershipManager implements RequestManager {
                 "\tOwned active tasks:            {}\n" +
                 "\tActive tasks to revoke:        {}\n" +
                 "\tAssigned standby tasks:        {}\n" +
-                "\tOwned standby tasks:           {}\n",
+                "\tOwned standby tasks:           {}\n" +
+                "\tAssigned warm-up tasks:        {}\n" +
+                "\tOwned warm-up tasks:           {}\n",
             targetAssignment.localEpoch,
             memberId,
             assignedActiveTasks,
             ownedActiveTasks,
             activeTasksToRevoke,
             assignedStandbyTasks,
-            ownedStandbyTasks
+            ownedStandbyTasks,
+            assignedWarmupTasks,
+            ownedWarmupTasks
         );
 
         SortedSet<TopicPartition> ownedTopicPartitionsFromSubscriptionState = new TreeSet<>(TOPIC_PARTITION_COMPARATOR);
@@ -791,7 +796,7 @@ public class StreamsMembershipManager implements RequestManager {
 
         final CompletableFuture<Void> onTasksRevokedAndAssignedCallbacksExecuted = onTasksRevokedCallbackExecuted.thenCompose(__ -> {
             if (!maybeAbortReconciliation()) {
-                return assignTasks(assignedActiveTasks, ownedActiveTasks, assignedStandbyTasks);
+                return assignTasks(assignedActiveTasks, ownedActiveTasks, assignedStandbyTasks, assignedWarmupTasks);
             }
             return CompletableFuture.completedFuture(null);
         });
@@ -833,12 +838,20 @@ public class StreamsMembershipManager implements RequestManager {
 
     private CompletableFuture<Void> assignTasks(final SortedSet<StreamsAssignmentInterface.TaskId> activeTasksToAssign,
                                                 final SortedSet<StreamsAssignmentInterface.TaskId> ownedActiveTasks,
-                                                final SortedSet<StreamsAssignmentInterface.TaskId> standbyTasksToAssign) {
-        log.info("Assigning active tasks {} and standby tasks {}",
+                                                final SortedSet<StreamsAssignmentInterface.TaskId> standbyTasksToAssign,
+                                                final SortedSet<StreamsAssignmentInterface.TaskId> warmupTasksToAssign) {
+        log.info("Assigning " +
+                (activeTasksToAssign.isEmpty() ? "no active tasks, " : "active tasks {}, ") +
+                (standbyTasksToAssign.isEmpty() ? "no standby tasks, " : "standby tasks {}, and ") +
+                (warmupTasksToAssign.isEmpty() ? "no warm-up tasks. " : "warm-up tasks {}.") +
+                "to the member.",
             activeTasksToAssign.stream()
                 .map(StreamsAssignmentInterface.TaskId::toString)
                 .collect(Collectors.joining(", ")),
             standbyTasksToAssign.stream()
+                .map(StreamsAssignmentInterface.TaskId::toString)
+                .collect(Collectors.joining(", ")),
+            warmupTasksToAssign.stream()
                 .map(StreamsAssignmentInterface.TaskId::toString)
                 .collect(Collectors.joining(", "))
         );
@@ -856,7 +869,7 @@ public class StreamsMembershipManager implements RequestManager {
             new StreamsAssignmentInterface.Assignment(
                 activeTasksToAssign,
                 standbyTasksToAssign,
-                Collections.emptySet()
+                warmupTasksToAssign
             )
         );
     }
