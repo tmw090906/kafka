@@ -20,6 +20,9 @@ on:
   schedule:
     - cron: '0 6 * * *'   # Run daily at 6am UTC
 
+  pull_request:
+    branches:
+      - trunk
 
 jobs:
   flaky-test-report:
@@ -38,6 +41,6 @@ jobs:
         uses: ./.github/actions/setup-python
       - name: Run Report
         env:
-          GE_ACCESS_TOKEN: ${{ secrets.GE_ACCESS_TOKEN }}
+          DEVELOCITY_ACCESS_TOKEN: ${{ secrets.DV_API_ACCESS }}
         run: |
           python ./.github/scripts/develocity_reports.py >> $GITHUB_STEP_SUMMARY
