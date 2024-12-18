@@ -355,7 +355,7 @@ public class StreamsGroup implements Group {
     public StreamsGroupMember getOrMaybeCreateMember(
         String memberId,
         boolean createIfNotExists
-    ) {
+    ) throws UnknownMemberIdException {
         StreamsGroupMember member = members.get(memberId);
         if (member != null) {
             return member;
@@ -976,18 +976,22 @@ public class StreamsGroup implements Group {
         StreamsGroupMember newMember
     ) {
         maybeRemoveTaskProcessId(oldMember);
-        addTaskProcessId(
-            newMember.assignedActiveTasks(),
-            newMember.assignedStandbyTasks(),
-            newMember.assignedWarmupTasks(),
-            newMember.processId()
-        );
-        addTaskProcessId(
-            newMember.activeTasksPendingRevocation(),
-            newMember.standbyTasksPendingRevocation(),
-            newMember.warmupTasksPendingRevocation(),
-            newMember.processId()
-        );
+        // After compaction, the member metadata may appear in the topic after, e.g., the current assignment of the member, so the
+        // process ID, which should always be non-null for a member after replaying the whole topic, can be null here.
+        if (newMember.processId() != null) {
+            addTaskProcessId(
+                newMember.assignedActiveTasks(),
+                newMember.assignedStandbyTasks(),
+                newMember.assignedWarmupTasks(),
+                newMember.processId()
+            );
+            addTaskProcessId(
+                newMember.activeTasksPendingRevocation(),
+                newMember.standbyTasksPendingRevocation(),
+                newMember.warmupTasksPendingRevocation(),
+                newMember.processId()
+            );
+        }
     }
 
     /**
@@ -998,7 +1002,7 @@ public class StreamsGroup implements Group {
     private void maybeRemoveTaskProcessId(
         StreamsGroupMember oldMember
     ) {
-        if (oldMember != null) {
+        if (oldMember != null && oldMember.processId() != null) {
             removeActiveTaskProcessIds(oldMember.assignedActiveTasks(), oldMember.processId());
             removeStandbyTaskProcessIds(oldMember.assignedStandbyTasks(), oldMember.processId());
             removeWarmupTaskProcessIds(oldMember.assignedWarmupTasks(), oldMember.processId());
