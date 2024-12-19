@@ -3914,6 +3914,8 @@ kafka.test.api.ShareConsumerTest:
 - testMultipleConsumersWithDifferentGroupIds
 - testPollNoSubscribeFails
 - testPollThrowsInterruptExceptionIfInterrupted
+- testShareAutoOffsetResetByDuration
+- testShareAutoOffsetResetByDurationInvalidFormat
 - testShareAutoOffsetResetDefaultValue
 - testShareAutoOffsetResetEarliest
 - testShareAutoOffsetResetEarliestAfterLsoMovement
