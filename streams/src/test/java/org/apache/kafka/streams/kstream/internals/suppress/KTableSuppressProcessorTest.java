@@ -36,7 +36,7 @@ import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.Record;
 import org.apache.kafka.streams.processor.internals.ProcessorNode;
 import org.apache.kafka.streams.state.internals.InMemoryTimeOrderedKeyValueChangeBuffer;
-import org.apache.kafka.test.MockInternalNewProcessorContext;
+import org.apache.kafka.test.MockInternalProcessorContext;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -76,7 +76,7 @@ public class KTableSuppressProcessorTest {
 
     private static class Harness<K, V> {
         private final Processor<K, Change<V>, K, Change<V>> processor;
-        private final MockInternalNewProcessorContext<K, Change<V>> context;
+        private final MockInternalProcessorContext<K, Change<V>> context;
 
 
         Harness(final Suppressed<K> suppressed,
@@ -94,7 +94,7 @@ public class KTableSuppressProcessorTest {
             final Processor<K, Change<V>, K, Change<V>> processor =
                 new KTableSuppressProcessorSupplier<>((SuppressedInternal<K>) suppressed, storeName, parent).get();
 
-            final MockInternalNewProcessorContext<K, Change<V>> context = new MockInternalNewProcessorContext<>();
+            final MockInternalProcessorContext<K, Change<V>> context = new MockInternalProcessorContext<>();
             context.setCurrentNode(new ProcessorNode("testNode"));
 
             buffer.init((StateStoreContext) context, buffer);
@@ -109,7 +109,7 @@ public class KTableSuppressProcessorTest {
     public void zeroTimeLimitShouldImmediatelyEmit() {
         final Harness<String, Long> harness =
             new Harness<>(untilTimeLimit(ZERO, unbounded()), String(), Long());
-        final MockInternalNewProcessorContext<String, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<String, Change<Long>> context = harness.context;
 
         final long timestamp = ARBITRARY_LONG;
         context.setRecordMetadata("", 0, 0L);
@@ -127,7 +127,7 @@ public class KTableSuppressProcessorTest {
     public void windowedZeroTimeLimitShouldImmediatelyEmit() {
         final Harness<Windowed<String>, Long> harness =
             new Harness<>(untilTimeLimit(ZERO, unbounded()), timeWindowedSerdeFrom(String.class, 100L), Long());
-        final MockInternalNewProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
 
         final long timestamp = ARBITRARY_LONG;
         context.setRecordMetadata("", 0, 0L);
@@ -145,7 +145,7 @@ public class KTableSuppressProcessorTest {
     public void intermediateSuppressionShouldBufferAndEmitLater() {
         final Harness<String, Long> harness =
             new Harness<>(untilTimeLimit(ofMillis(1), unbounded()), String(), Long());
-        final MockInternalNewProcessorContext<String, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<String, Change<Long>> context = harness.context;
 
         final long timestamp = 0L;
         context.setRecordMetadata("topic", 0, 0);
@@ -168,7 +168,7 @@ public class KTableSuppressProcessorTest {
     public void finalResultsSuppressionShouldBufferAndEmitAtGraceExpiration() {
         final Harness<Windowed<String>, Long> harness =
             new Harness<>(finalResults(ofMillis(1L)), timeWindowedSerdeFrom(String.class, 1L), Long());
-        final MockInternalNewProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
 
         final long windowStart = 99L;
         final long recordTime = 99L;
@@ -212,7 +212,7 @@ public class KTableSuppressProcessorTest {
     public void finalResultsWithZeroGraceShouldStillBufferUntilTheWindowEnd() {
         final Harness<Windowed<String>, Long> harness =
             new Harness<>(finalResults(ofMillis(0L)), timeWindowedSerdeFrom(String.class, 100L), Long());
-        final MockInternalNewProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
 
         // note the record is in the past, but the window end is in the future, so we still have to buffer,
         // even though the grace period is 0.
@@ -238,7 +238,7 @@ public class KTableSuppressProcessorTest {
     public void finalResultsWithZeroGraceAtWindowEndShouldImmediatelyEmit() {
         final Harness<Windowed<String>, Long> harness =
             new Harness<>(finalResults(ofMillis(0L)), timeWindowedSerdeFrom(String.class, 100L), Long());
-        final MockInternalNewProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
 
         final long timestamp = 100L;
         context.setRecordMetadata("", 0, 0L);
@@ -260,7 +260,7 @@ public class KTableSuppressProcessorTest {
     public void finalResultsShouldDropTombstonesForTimeWindows() {
         final Harness<Windowed<String>, Long> harness =
             new Harness<>(finalResults(ofMillis(0L)), timeWindowedSerdeFrom(String.class, 100L), Long());
-        final MockInternalNewProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
 
         final long timestamp = 100L;
         context.setRecordMetadata("", 0, 0L);
@@ -281,7 +281,7 @@ public class KTableSuppressProcessorTest {
     public void finalResultsShouldDropTombstonesForSessionWindows() {
         final Harness<Windowed<String>, Long> harness =
             new Harness<>(finalResults(ofMillis(0L)), sessionWindowedSerdeFrom(String.class), Long());
-        final MockInternalNewProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
 
         final long timestamp = 100L;
         context.setRecordMetadata("", 0, 0L);
@@ -301,7 +301,7 @@ public class KTableSuppressProcessorTest {
     public void suppressShouldNotDropTombstonesForTimeWindows() {
         final Harness<Windowed<String>, Long> harness =
             new Harness<>(untilTimeLimit(ofMillis(0), maxRecords(0)), timeWindowedSerdeFrom(String.class, 100L), Long());
-        final MockInternalNewProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
 
         final long timestamp = 100L;
         final Headers headers = new RecordHeaders().add("k", "v".getBytes(StandardCharsets.UTF_8));
@@ -326,7 +326,7 @@ public class KTableSuppressProcessorTest {
     public void suppressShouldNotDropTombstonesForSessionWindows() {
         final Harness<Windowed<String>, Long> harness =
             new Harness<>(untilTimeLimit(ofMillis(0), maxRecords(0)), sessionWindowedSerdeFrom(String.class), Long());
-        final MockInternalNewProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<Windowed<String>, Change<Long>> context = harness.context;
 
         final long timestamp = 100L;
         context.setRecordMetadata("", 0, 0L);
@@ -349,7 +349,7 @@ public class KTableSuppressProcessorTest {
     public void suppressShouldNotDropTombstonesForKTable() {
         final Harness<String, Long> harness =
             new Harness<>(untilTimeLimit(ofMillis(0), maxRecords(0)), String(), Long());
-        final MockInternalNewProcessorContext<String, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<String, Change<Long>> context = harness.context;
 
         final long timestamp = 100L;
         context.setRecordMetadata("", 0, 0L);
@@ -367,7 +367,7 @@ public class KTableSuppressProcessorTest {
     public void suppressShouldEmitWhenOverRecordCapacity() {
         final Harness<String, Long> harness =
             new Harness<>(untilTimeLimit(Duration.ofDays(100), maxRecords(1)), String(), Long());
-        final MockInternalNewProcessorContext<String, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<String, Change<Long>> context = harness.context;
 
         final long timestamp = 100L;
         context.setRecordMetadata("", 0, 0L);
@@ -389,7 +389,7 @@ public class KTableSuppressProcessorTest {
     public void suppressShouldEmitWhenOverByteCapacity() {
         final Harness<String, Long> harness =
             new Harness<>(untilTimeLimit(Duration.ofDays(100), maxBytes(60L)), String(), Long());
-        final MockInternalNewProcessorContext<String, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<String, Change<Long>> context = harness.context;
 
         final long timestamp = 100L;
         context.setRecordMetadata("", 0, 0L);
@@ -411,7 +411,7 @@ public class KTableSuppressProcessorTest {
     public void suppressShouldShutDownWhenOverRecordCapacity() {
         final Harness<String, Long> harness =
             new Harness<>(untilTimeLimit(Duration.ofDays(100), maxRecords(1).shutDownWhenFull()), String(), Long());
-        final MockInternalNewProcessorContext<String, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<String, Change<Long>> context = harness.context;
 
         final long timestamp = 100L;
         context.setRecordMetadata("", 0, 0L);
@@ -435,7 +435,7 @@ public class KTableSuppressProcessorTest {
     public void suppressShouldShutDownWhenOverByteCapacity() {
         final Harness<String, Long> harness =
             new Harness<>(untilTimeLimit(Duration.ofDays(100), maxBytes(60L).shutDownWhenFull()), String(), Long());
-        final MockInternalNewProcessorContext<String, Change<Long>> context = harness.context;
+        final MockInternalProcessorContext<String, Change<Long>> context = harness.context;
 
         final long timestamp = 100L;
         context.setRecordMetadata("", 0, 0L);
