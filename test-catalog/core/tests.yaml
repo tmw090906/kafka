@@ -1135,7 +1135,6 @@ kafka.coordinator.group.GroupMetadataManagerTest:
 - testGroupLoadWithConsumerAndTransactionalOffsetCommitsConsumerWins
 - testGroupLoadWithConsumerAndTransactionalOffsetCommitsTransactionWins
 - testGroupLoadedWithPendingCommits
-- testGroupMetadataKey
 - testGroupMetadataRemoval
 - testGroupMetadataRemovalWithLogAppendTime
 - testGroupNotExists
@@ -1161,7 +1160,6 @@ kafka.coordinator.group.GroupMetadataManagerTest:
 - testLoadWithCommittedAndAbortedTransactionalOffsetCommits
 - testLogInfoFromCleanupGroupMetadata
 - testMetrics
-- testOffsetCommitKey
 - testOffsetExpirationOfActiveGroupSemantics
 - testOffsetExpirationOfSimpleConsumer
 - testOffsetExpirationSemantics
@@ -1356,6 +1354,8 @@ kafka.coordinator.transaction.TransactionLogTest:
 - testReadTxnRecordKeyCanReadUnknownMessage
 - testSerializeTransactionLogValueToFlexibleVersion
 - testSerializeTransactionLogValueToHighestNonFlexibleVersion
+- testTransactionMetadataParsing
+- testTransactionMetadataTombstoneParsing
 kafka.coordinator.transaction.TransactionMarkerChannelManagerTest:
 - shouldAbortAppendToLogOnEndTxnWhenNotCoordinatorError
 - shouldCompleteAppendToLogOnEndTxnWhenSendMarkersSucceed
@@ -3077,7 +3077,6 @@ kafka.server.KafkaConfigTest:
 - testControllerListenerNameDoesNotMapToPlaintextByDefaultForNonKRaft
 - testControllerListenerNameMapsToPlaintextByDefaultForKRaft
 - testControllerListenerNames
-- testControllerListenerNamesValidForKRaftControllerOnly
 - testControllerListenersCanBeAdvertisedForKRaftCombined
 - testControllerQuorumVoterStringsToNodes
 - testCustomMetadataLogDir
@@ -3915,8 +3914,6 @@ kafka.test.api.ShareConsumerTest:
 - testMultipleConsumersWithDifferentGroupIds
 - testPollNoSubscribeFails
 - testPollThrowsInterruptExceptionIfInterrupted
-- testShareAutoOffsetResetByDuration
-- testShareAutoOffsetResetByDurationInvalidFormat
 - testShareAutoOffsetResetDefaultValue
 - testShareAutoOffsetResetEarliest
 - testShareAutoOffsetResetEarliestAfterLsoMovement
@@ -3952,7 +3949,6 @@ kafka.tools.DumpLogSegmentsTest:
 - testPrintDataLog
 - testPrintDataLogPartialBatches
 - testShareGroupStateMessageParser
-- testTransactionLogMessageParser
 kafka.tools.StorageToolTest:
 - testBootstrapScramRecords
 - testConfigToLogDirectories
