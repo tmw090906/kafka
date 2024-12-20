@@ -965,6 +965,7 @@ org.apache.kafka.clients.consumer.internals.AbstractCoordinatorTest:
 - testWakeupAfterJoinGroupSent
 - testWakeupAfterJoinGroupSentExternalCompletion
 - testWakeupAfterSyncGroupReceived
+- testWakeupAfterSyncGroupReceivedExternalCompletion
 - testWakeupAfterSyncGroupSentExternalCompletion
 - testWakeupFromEnsureCoordinatorReady
 - testWakeupInOnJoinComplete
@@ -2463,10 +2464,6 @@ org.apache.kafka.clients.producer.RoundRobinPartitionerTest:
 - testRoundRobinWithNullKeyBytes
 - testRoundRobinWithNullKeyBytesAndEvenPartitionCount
 - testRoundRobinWithUnavailablePartitions
-org.apache.kafka.clients.producer.UniformStickyPartitionerTest:
-- testRoundRobinWithKeyBytes
-- testRoundRobinWithNullKeyBytes
-- testRoundRobinWithUnavailablePartitions
 org.apache.kafka.clients.producer.internals.BufferPoolTest:
 - outOfMemoryOnAllocation
 - testBlockTimeout
@@ -2486,8 +2483,6 @@ org.apache.kafka.clients.producer.internals.BuiltInPartitionerTest:
 - testStickyBatchSizeMoreThatZero
 - testStickyPartitioning
 - unavailablePartitionsTest
-org.apache.kafka.clients.producer.internals.DefaultPartitionerTest:
-- testKeyPartitionIsStable
 org.apache.kafka.clients.producer.internals.FutureRecordMetadataTest:
 - testFutureGetWithMilliSeconds
 - testFutureGetWithSeconds
@@ -2558,7 +2553,6 @@ org.apache.kafka.clients.producer.internals.RecordAccumulatorTest:
 - testSplitAndReenqueue
 - testSplitBatchOffAccumulator
 - testSplitFrequency
-- testStickyBatches
 - testStressfulSituation
 - testUniformBuiltInPartitioner
 org.apache.kafka.clients.producer.internals.SenderTest:
@@ -2636,9 +2630,6 @@ org.apache.kafka.clients.producer.internals.SenderTest:
 - testWhenFirstBatchExpireNoSendSecondBatchIfGuaranteeOrder
 - testWhenProduceResponseReturnsWithALeaderShipChangeErrorAndNewLeaderInformation
 - testWhenProduceResponseReturnsWithALeaderShipChangeErrorButNoNewLeaderInformation
-org.apache.kafka.clients.producer.internals.StickyPartitionCacheTest:
-- testStickyPartitionCache
-- unavailablePartitionsTest
 org.apache.kafka.clients.producer.internals.TransactionManagerTest:
 - resendFailedProduceRequestAfterAbortableError
 - shouldFailAbortIfAddOffsetsFailsWithFatalError
