@@ -1,7 +1,5 @@
 org.apache.kafka.clients.ApiVersionsTest:
 - testFinalizedFeaturesUpdate
-- testMaxUsableProduceMagic
-- testMaxUsableProduceMagicWithRaftController
 org.apache.kafka.clients.ClientUtilsTest:
 - testFilterPreferredAddresses
 - testInvalidConfig
@@ -129,7 +127,6 @@ org.apache.kafka.clients.NetworkClientTest:
 - testSimpleRequestResponseWithNoBrokerDiscovery
 - testSimpleRequestResponseWithStaticNodes
 - testTelemetryRequest
-- testThrottlingNotEnabledForConnectionToOlderBroker
 - testUnsupportedApiVersionsRequestWithVersionProvidedByTheBroker
 - testUnsupportedApiVersionsRequestWithoutVersionProvidedByTheBroker
 - testUnsupportedVersionDuringInternalMetadataRequest
@@ -1705,7 +1702,6 @@ org.apache.kafka.clients.consumer.internals.FetchRequestManagerTest:
 - testFetchOnPausedPartition
 - testFetchPositionAfterException
 - testFetchRequestInternalError
-- testFetchRequestWhenRecordTooLarge
 - testFetchResponseMetrics
 - testFetchResponseMetricsWithOnePartitionAtTheWrongOffset
 - testFetchResponseMetricsWithOnePartitionError
@@ -1791,7 +1787,6 @@ org.apache.kafka.clients.consumer.internals.FetcherTest:
 - testFetchOnPausedPartition
 - testFetchPositionAfterException
 - testFetchRequestInternalError
-- testFetchRequestWhenRecordTooLarge
 - testFetchResponseMetrics
 - testFetchResponseMetricsWithOnePartitionAtTheWrongOffset
 - testFetchResponseMetricsWithOnePartitionError
@@ -1891,7 +1886,6 @@ org.apache.kafka.clients.consumer.internals.OffsetFetcherTest:
 - testGetOffsetsForTimesTimeout
 - testGetOffsetsForTimesWhenSomeTopicPartitionLeadersDisconnectException
 - testGetOffsetsForTimesWhenSomeTopicPartitionLeadersNotKnownInitially
-- testGetOffsetsForTimesWithUnknownOffsetV0
 - testGetOffsetsIncludesLeaderEpoch
 - testGetOffsetsUnknownLeaderEpoch
 - testIdempotentResetWithInFlightReset
@@ -2540,7 +2534,6 @@ org.apache.kafka.clients.producer.internals.RecordAccumulatorTest:
 - testExponentialRetryBackoffLeaderChange
 - testFlush
 - testFull
-- testIdempotenceWithOldMagic
 - testLinger
 - testMutedPartitions
 - testNextReadyCheckDelay
@@ -2570,7 +2563,6 @@ org.apache.kafka.clients.producer.internals.SenderTest:
 - testCustomErrorMessage
 - testDefaultErrorMessage
 - testDoNotPollWhenNoRequestSent
-- testDownConversionForMismatchedMagicValues
 - testEpochBumpOnOutOfOrderSequenceForNextBatch
 - testEpochBumpOnOutOfOrderSequenceForNextBatchWhenBatchInFlightFails
 - testEpochBumpOnOutOfOrderSequenceForNextBatchWhenThereIsNoBatchInFlight
@@ -2594,7 +2586,6 @@ org.apache.kafka.clients.producer.internals.SenderTest:
 - testInitProducerIdRequest
 - testInitProducerIdWithMaxInFlightOne
 - testInvalidTxnStateIsAnAbortableError
-- testMessageFormatDownConversion
 - testMetadataTopicExpiry
 - testNoDoubleDeallocation
 - testNodeLatencyStats
@@ -3155,7 +3146,7 @@ org.apache.kafka.common.message.MessageTest:
 - testOffsetCommitDefaultGroupInstanceId
 - testOffsetCommitRequestVersions
 - testOffsetCommitResponseVersions
-- testOffsetFetchV0ToV7
+- testOffsetFetchV1ToV7
 - testOffsetFetchV8AndAbove
 - testOffsetFetchV8AndAboveSingleGroup
 - testOffsetForLeaderEpochVersions
@@ -3795,21 +3786,16 @@ org.apache.kafka.common.requests.ControlledShutdownRequestTest:
 - testGetErrorResponse
 - testUnsupportedVersion
 org.apache.kafka.common.requests.CreateAclsRequestTest:
-- shouldRoundTripV0
 - shouldRoundTripV1
 - shouldThrowOnIfUnknown
 - shouldThrowOnV0IfNotLiteral
 org.apache.kafka.common.requests.DeleteAclsRequestTest:
-- shouldRoundTripAnyV0AsLiteral
-- shouldRoundTripLiteralV0
 - shouldRoundTripV1
 - shouldThrowOnUnknownElements
 - shouldThrowOnV0IfPrefixed
 org.apache.kafka.common.requests.DeleteAclsResponseTest:
-- shouldRoundTripV0
 - shouldRoundTripV1
 - shouldThrowOnIfUnknown
-- shouldThrowOnV0IfNotLiteral
 org.apache.kafka.common.requests.DeleteGroupsRequestTest:
 - testGetErrorResultCollection
 org.apache.kafka.common.requests.DeleteGroupsResponseTest:
@@ -3822,18 +3808,12 @@ org.apache.kafka.common.requests.DeleteTopicsRequestTest:
 - testTopicIdsField
 - testTopicNormalization
 org.apache.kafka.common.requests.DescribeAclsRequestTest:
-- shouldRoundTripAnyV0AsLiteral
 - shouldRoundTripAnyV1
-- shouldRoundTripLiteralV0
-- shouldRoundTripLiteralV1
 - shouldRoundTripPrefixedV1
 - shouldThrowIfUnknown
-- shouldThrowOnV0IfPrefixed
 org.apache.kafka.common.requests.DescribeAclsResponseTest:
-- shouldRoundTripV0
 - shouldRoundTripV1
 - shouldThrowIfUnknown
-- shouldThrowOnV0IfNotLiteral
 - testAclBindings
 org.apache.kafka.common.requests.DescribeGroupsRequestTest:
 - testGetErrorDescribedGroupList
@@ -3868,7 +3848,6 @@ org.apache.kafka.common.requests.HeartbeatRequestTest:
 org.apache.kafka.common.requests.JoinGroupRequestTest:
 - shouldAcceptValidGroupInstanceIds
 - shouldThrowOnInvalidGroupInstanceIds
-- testRebalanceTimeoutDefaultsToSessionTimeoutV0
 - testRequestVersionCompatibilityFailBuild
 org.apache.kafka.common.requests.JoinGroupResponseTest:
 - testProtocolNameBackwardCompatibility
@@ -3889,12 +3868,10 @@ org.apache.kafka.common.requests.LeaveGroupResponseTest:
 org.apache.kafka.common.requests.ListOffsetsRequestTest:
 - testDuplicatePartitions
 - testGetErrorResponse
-- testGetErrorResponseV0
 - testListOffsetsRequestOldestVersion
 - testToListOffsetsTopics
 org.apache.kafka.common.requests.MetadataRequestTest:
-- testEmptyMeansAllTopicsV0
-- testEmptyMeansEmptyForVersionsAboveV0
+- testEmptyMeansEmptyForAllVersions
 - testMetadataRequestVersion
 - testTopicIdAndNullTopicNameRequests
 - testTopicIdWithZeroUuid
@@ -3931,7 +3908,6 @@ org.apache.kafka.common.requests.ProduceRequestTest:
 - shouldNotBeFlaggedAsIdempotentWhenRecordsNotIdempotent
 - shouldNotBeFlaggedAsTransactionalWhenNoRecords
 - testBuildWithCurrentMessageFormat
-- testBuildWithOldMessageFormat
 - testMixedIdempotentData
 - testMixedTransactionalData
 - testV3AndAboveCannotHaveNoRecordBatches
@@ -3941,7 +3917,6 @@ org.apache.kafka.common.requests.ProduceRequestTest:
 - testV6AndBelowCannotUseZStdCompression
 org.apache.kafka.common.requests.ProduceResponseTest:
 - produceResponseRecordErrorsTest
-- produceResponseV5Test
 - produceResponseVersionTest
 org.apache.kafka.common.requests.PushTelemetryRequestTest:
 - testGetErrorResponse
@@ -3979,9 +3954,7 @@ org.apache.kafka.common.requests.RequestResponseTest:
 - testCreateTopicRequestV3FailsIfNoPartitionsOrReplicas
 - testDeletableTopicResultErrorMessageIsNullByDefault
 - testErrorCountsIncludesNone
-- testFetchRequestCompat
 - testFetchRequestIsolationLevel
-- testFetchRequestMaxBytesOldVersions
 - testFetchRequestWithMetadata
 - testFetchResponseV4
 - testInitProducerIdRequestVersions
@@ -3989,7 +3962,6 @@ org.apache.kafka.common.requests.RequestResponseTest:
 - testInvalidSaslAuthenticateRequest
 - testInvalidSaslHandShakeRequest
 - testInvalidTaggedFieldsWithSaslAuthenticateRequest
-- testJoinGroupRequestV0RebalanceTimeout
 - testListGroupRequestV3FailsWithStates
 - testOffsetFetchRequestBuilderToStringV0ToV7
 - testOffsetFetchRequestBuilderToStringV8AndAbove

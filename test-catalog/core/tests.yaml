@@ -2005,7 +2005,6 @@ kafka.network.RequestConvertToJsonTest:
 - testRequestDesc
 - testRequestDescMetrics
 - testRequestHeaderNode
-- testRequestHeaderNodeWithDeprecatedApiVersion
 kafka.network.SocketServerTest:
 - closingChannelSendFailure
 - closingChannelWithBufferedReceivesFailedSend
@@ -2055,7 +2054,6 @@ kafka.network.SocketServerTest:
 - testNoOpActionResponseWithThrottledChannelWhereThrottlingInProgress
 - testProcessorMetricsTags
 - testRequestMetricsAfterStop
-- testRequestPerSecAndDeprecatedRequestsPerSecMetrics
 - testSaslReauthenticationFailureNoKip152SaslAuthenticate
 - testSaslReauthenticationFailureWithKip152SaslAuthenticate
 - testSendActionResponseWithThrottledChannelWhereThrottlingAlreadyDone
@@ -2668,12 +2666,6 @@ kafka.server.FetchFromFollowerIntegrationTest:
 - testFetchFromFollowerWithRoll
 - testFetchFromLeaderWhilePreferredReadReplicaIsUnavailable
 - testFollowerCompleteDelayedFetchesOnReplication
-kafka.server.FetchRequestDownConversionConfigTest:
-- testLatestFetchWithDownConversionDisabled
-- testV12WithDownConversionDisabled
-- testV1FetchFromConsumer
-- testV1FetchFromReplica
-- testV1FetchWithDownConversionDisabled
 kafka.server.FetchRequestMaxBytesTest:
 - testConsumeMultipleRecords
 kafka.server.FetchRequestTest:
@@ -2681,8 +2673,6 @@ kafka.server.FetchRequestTest:
 - testCreateIncrementalFetchWithPartitionsInErrorV12
 - testCurrentEpochValidation
 - testCurrentEpochValidationV12
-- testDownConversionFromBatchedToUnbatchedRespectsOffset
-- testDownConversionWithConnectionFailure
 - testEpochValidationWithinFetchSession
 - testEpochValidationWithinFetchSessionV12
 - testFetchRequestToNonReplica
@@ -2977,7 +2967,6 @@ kafka.server.KafkaApisTest:
 - testListOffsetLatestTieredTimestampWithUnsupportedVersion
 - testListOffsetMaxTimestampWithUnsupportedVersion
 - testListOffsetNegativeTimestampWithOneOrAboveVersion
-- testListOffsetNegativeTimestampWithZeroVersion
 - testListTransactionsAuthorization
 - testListTransactionsErrorResponse
 - testLog4jIncrementalAlterConfigsRequestWithKRaft
@@ -3252,7 +3241,6 @@ kafka.server.LogOffsetTest:
 - testGetOffsetsAfterDeleteRecords
 - testGetOffsetsBeforeEarliestTime
 - testGetOffsetsBeforeLatestTime
-- testGetOffsetsBeforeNow
 - testGetOffsetsForUnknownTopic
 kafka.server.LogRecoveryTest:
 - testHWCheckpointNoFailuresMultipleLogSegments
@@ -3289,7 +3277,6 @@ kafka.server.MetadataRequestTest:
 - testAutoCreateTopicWithInvalidReplicationFactor
 - testAutoTopicCreation
 - testClusterIdIsValid
-- testClusterIdWithRequestVersion1
 - testIsInternal
 - testIsrAfterBrokerShutDownAndJoinsBack
 - testNoTopicsRequest
