@@ -314,7 +314,6 @@ org.apache.kafka.clients.admin.KafkaAdminClientTest:
 - testListConsumerGroupOffsetsNonRetriableErrors
 - testListConsumerGroupOffsetsNumRetries
 - testListConsumerGroupOffsetsOptionsWithBatchedApi
-- testListConsumerGroupOffsetsOptionsWithUnbatchedApi
 - testListConsumerGroupOffsetsRetriableErrors
 - testListConsumerGroupOffsetsRetryBackoff
 - testListConsumerGroups
