@@ -68,6 +68,7 @@ public class JmxReporter implements MetricsReporter {
     private String prefix;
     private final Map<String, KafkaMbean> mbeans = new HashMap<>();
     private Predicate<String> mbeanPredicate = s -> true;
+    private boolean closed = false;
 
     public JmxReporter() {
         this.prefix = "";
@@ -191,6 +192,7 @@ public class JmxReporter implements MetricsReporter {
 
     public void close() {
         synchronized (LOCK) {
+            closed = true;
             for (KafkaMbean mbean : this.mbeans.values())
                 unregister(mbean);
         }
@@ -207,6 +209,12 @@ public class JmxReporter implements MetricsReporter {
     }
 
     private void reregister(KafkaMbean mbean) {
+        // avoid re-registering after being closed, which could lead to memory leaks
+        // See KAFKA-18337 for more detail.
+        if (closed) {
+            log.warn("JmxReporter has been closed!, cannot re-registering mbean {}", mbean);
+            return;
+        }
         unregister(mbean);
         try {
             ManagementFactory.getPlatformMBeanServer().registerMBean(mbean, mbean.name());

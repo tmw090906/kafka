@@ -19,6 +19,7 @@ package org.apache.kafka.common.metrics;
 import org.apache.kafka.common.MetricName;
 import org.apache.kafka.common.metrics.stats.Avg;
 import org.apache.kafka.common.metrics.stats.CumulativeSum;
+import org.apache.kafka.common.metrics.stats.Max;
 import org.apache.kafka.common.utils.Time;
 
 import org.junit.jupiter.api.Test;
@@ -176,5 +177,45 @@ public class JmxReporterTest {
         } finally {
             metrics.close();
         }
+    }
+
+    @Test
+    public void testClose() throws Exception {
+        Metrics metrics = new Metrics();
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+        JmxReporter reporter = new JmxReporter();
+        try {
+            metrics.addReporter(reporter);
+
+            assertFalse(server.isRegistered(new ObjectName(":type=grp1")));
+
+            Sensor sensor = metrics.sensor("kafka.requests");
+            sensor.add(metrics.metricName("pack.bean1.avg", "grp1"), new Avg());
+            sensor.add(metrics.metricName("pack.bean1.max", "grp1"), new Max());
+            sensor.add(metrics.metricName("pack.bean2.total", "grp2"), new CumulativeSum());
+
+            assertTrue(server.isRegistered(new ObjectName(":type=grp1")));
+            assertEquals(Double.NaN, server.getAttribute(new ObjectName(":type=grp1"), "pack.bean1.avg"));
+            assertEquals(Double.NaN, server.getAttribute(new ObjectName(":type=grp1"), "pack.bean1.max"));
+            assertTrue(server.isRegistered(new ObjectName(":type=grp2")));
+            assertEquals(0.0, server.getAttribute(new ObjectName(":type=grp2"), "pack.bean2.total"));
+
+            MetricName metricName = metrics.metricName("pack.bean1.avg", "grp1");
+            String mBeanName = JmxReporter.getMBeanName("", metricName);
+            assertTrue(reporter.containsMbean(mBeanName));
+
+            assertTrue(server.isRegistered(new ObjectName(":type=grp1")));
+            assertTrue(server.isRegistered(new ObjectName(":type=grp2")));
+        } finally {
+            metrics.close();
+        }
+
+        assertFalse(server.isRegistered(new ObjectName(":type=grp1")));
+        assertFalse(server.isRegistered(new ObjectName(":type=grp2")));
+
+        MetricName metricName = metrics.metricName("pack.bean1.avg", "grp1");
+        metrics.removeMetric(metricName);
+        assertFalse(server.isRegistered(new ObjectName(":type=grp1")));
+        assertFalse(server.isRegistered(new ObjectName(":type=grp2")));
     }
 }
